@@ -1,0 +1,15 @@
+*.png
+.DS_Store
+*.pyc
+*.xlsx
+*.nbc
+*.nbi
+*.nc
+*.zip
+__pycache__/
+*.csv
+*.txt
+*.text*
+.venv/
+.pytest_cache/
+.vscode/
