@@ -12,12 +12,30 @@ This model simulates the UK's future energy system using hourly/daily time serie
 - **Direct Air Capture (DAC)** integration for CO2 removal using excess capacity
 - **Scenario costing**: system cost and energy cost calculations for modeled pathways
 
-## Getting Started
+## Python Environment
 
-Install dependencies using `uv`:
+Create a virtual environment with `uv`:
 
 ```bash
-uv install
+uv venv
+```
+
+Activate it:
+
+```bash
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+```
+
+## Getting Started
+
+Sync dependencies using `uv`:
+
+```bash
+uv sync
 ```
 
 Run tests to ensure everything works:
@@ -29,7 +47,7 @@ uv run pytest
 Check code style:
 
 ```bash
-uv run ruff check .
+uv run ruff check --fix .
 uv run ruff format .
 ```
 
