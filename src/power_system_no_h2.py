@@ -230,31 +230,13 @@ class PowerSystemNoH2:
         additional_costs = 0 * U.GBP
         gas_ccs_column = f"gas_ccs_energy (TWh),RC={int(self.renewable_capacity)}GW"
         annual_gas_ccs_energy = sim_df[gas_ccs_column].mean() * 365
-        gas_dac_elec_column = f"gas_dac_electricity (TWh),RC={int(self.renewable_capacity)}GW"
-        annual_gas_dac_electricity = sim_df[gas_dac_elec_column].mean() * 365
-        net_gas_ccs_energy = annual_gas_ccs_energy - annual_gas_dac_electricity
-        gas_ccs_cost = net_gas_ccs_energy * A.DispatchableGasCCS.LCOE
+        gas_ccs_cost = annual_gas_ccs_energy * A.DispatchableGasCCS.LCOE
         additional_costs += gas_ccs_cost
 
         medium_storage_column = f"energy_into_medium_storage (TWh),RC={int(self.renewable_capacity)}GW"
         annual_medium_storage_energy = sim_df[medium_storage_column].mean() * 365
         medium_storage_cost = annual_medium_storage_energy * A.MediumTermStorage.LCOE
         additional_costs += medium_storage_cost
-
-        # E-DAC operational cost (based on electricity consumed)
-        dac_column = f"dac_energy (TWh),RC={int(self.renewable_capacity)}GW"
-        annual_dac_energy = sim_df[dac_column].mean() * 365
-        dac_cost = annual_dac_energy * A.EDAC.LCOE
-        additional_costs += dac_cost
-
-        gas_dac_capture_column = f"gas_dac_capture (MtCO2),RC={int(self.renewable_capacity)}GW"
-        annual_gas_dac_capture = sim_df[gas_dac_capture_column].mean() * 365
-        gas_dac_electricity_emissions = (
-            annual_gas_dac_electricity.to(U.MWh) * A.GasTechDACParameters.GasCO2Intensity
-        ).to(U.t)
-        net_gas_dac_capture = annual_gas_dac_capture.to(U.t) - gas_dac_electricity_emissions
-        gas_dac_cost = net_gas_dac_capture * A.LTDAC.LCOR
-        additional_costs += gas_dac_cost
 
         return base_cost + additional_costs
 
@@ -268,8 +250,8 @@ class PowerSystemNoH2:
             f"- DAC energy: {results['annual_dac_energy']:~0.1f}\n"
             f"- DAC CO2 removals: {results['annual_co2_removals']:~0.1f}\n"
             f"- DAC Capacity Factor: {results['dac_capacity_factor']:.1%}\n"
-            f"- Gas CCS energy: {results['annual_gas_ccs_energy']:~0.1f}\n"
-            f"- Gas CCS Capacity Factor: {results['gas_ccs_capacity_factor']:.1%}\n"
+            f"- Gas energy: {results['annual_gas_ccs_energy']:~0.1f}\n"
+            f"- Gas Capacity Factor: {results['gas_ccs_capacity_factor']:.1%}\n"
             f"- Gas DAC electricity: {results['annual_gas_dac_electricity']:~0.1f}\n"
             f"- Gas DAC capture: {results['annual_gas_dac_capture']:~0.1f}\n"
             f"- Gas CO2 emissions: {results['annual_gas_emissions']:~0.1f}\n"
@@ -284,9 +266,9 @@ class PowerSystemNoH2:
             return
 
         with plt.rc_context({"figure.constrained_layout.use": False}):
-            fig = plt.figure(figsize=(15, 6))
+            fig = plt.figure(figsize=(18, 8))
 
-        gs = gridspec.GridSpec(2, 4, figure=fig, hspace=0.0, wspace=0.1)
+        gs = gridspec.GridSpec(2, 4, figure=fig, hspace=0.0, wspace=0.1, width_ratios=[1, 1, 1, 1.6])
 
         ax1 = fig.add_subplot(gs[0, :3])
         medium_storage_pct = (
@@ -328,7 +310,7 @@ class PowerSystemNoH2:
             f"\nResults:\n"
             f"{self.format_simulation_results(results)}"
         )
-        ax3.text(0, 0.5, text, fontsize=11, verticalalignment="center", fontfamily="monospace")
+        ax3.text(0, 0.5, text, fontsize=16, verticalalignment="center", fontfamily="monospace")
 
         if fname:
             fig.savefig(fname, bbox_inches="tight", dpi=300)

@@ -179,6 +179,8 @@ def test_analyze_simulation_results_structure(power_system_model: PowerSystem, s
         "annual_gas_dac_capture",
         "annual_gas_emissions",
         "annual_net_capture",
+        "annual_dac_total_cost",
+        "dac_cost_per_mwh",
     }
 
     assert set(results.keys()) == expected_keys, "Results dictionary missing expected keys"
@@ -196,6 +198,8 @@ def test_analyze_simulation_results_structure(power_system_model: PowerSystem, s
     assert isinstance(results["annual_gas_dac_capture"], Quantity)
     assert isinstance(results["annual_gas_emissions"], Quantity)
     assert isinstance(results["annual_net_capture"], Quantity)
+    assert isinstance(results["annual_dac_total_cost"], Quantity)
+    assert isinstance(results["dac_cost_per_mwh"], Quantity)
 
     # Check capacity factor is a valid percentage
     assert 0 <= results["dac_capacity_factor"] <= 1, "DAC capacity factor should be between 0 and 1"

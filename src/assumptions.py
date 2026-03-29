@@ -162,7 +162,7 @@ class Renewables:
 class Nuclear:
     """Parameters for nuclear power generation technologies."""
 
-    Capacity = 12 * U.GW
+    Capacity = 12 * U.GW # was 12 GW in CB7 (Table 7.5.1), FES 2025 (Table 32) has 24.1 GW.
     CapacityFactor = 0.9  # Based on Hinkley Point C performance
 
     class CapacityRatios:
@@ -209,7 +209,7 @@ class HydrogenStorage:
 
         # Source: IEA via RS report
 
-        Power = 40 * U.GW  # Electrolyser power capacity
+        Power = 60 * U.GW  # Electrolyser power capacity #40
         Efficiency = 0.74  # Converting electrical energy to hydrogen
         Capex = 450 / GBPToUSD * U.GBP / U.kW
         Opex = Capex * 0.015
@@ -223,7 +223,7 @@ class HydrogenStorage:
         # For Capex, H21 NOE assumes £325M for 1.22 TWh. CS Smith et al (2023)
         # take the midpoint of 1-2x this number, which is £399.59M per TWh.
 
-        Capacity = 50.0 * U.TWh  # CB7 has 5-9 TWh, FES 2025 (Table 38) has 12 TWh.
+        Capacity = 132.0 * U.TWh  # CB7 has 5-9 TWh, FES 2025 (Table 38) has 12 TWh. #50
         Efficiency = 0.407  # Round-trip efficiency (electrolysis * generation efficiencies
         Capex = 400 * U.GBP / U.MWh
         Opex = Capex * 0.015
@@ -256,6 +256,8 @@ class DAC:
 
     CarbonStorage = 7.5  # GBP/tonne CO2
 
+    LCOR = 106.8 * U.GBP / U.t  # Levelized Cost of Removal (LCOR) for DAC, including carbon storage costs
+
     class EnergyCost:
         """Energy requirements for DAC processes."""
 
@@ -273,17 +275,17 @@ class LTDAC:
     """Parameters for low-temperature DAC driven by CCGT waste heat."""
     GasInputPerTonCO2 = 1.1389 * U.MWh / U.t_mt  # Gas input per tonne of CO2 captured
     HeatPerTonCO2 = 4 * U.GJ / U.t_mt  # Heat input required per tonne of CO2 captured (Deprecated)
-    
-    ElectricityPerTonCO2 = 0.331122 * U.MWh / U.t_mt  # Auxiliary electricity per tonne of CO2 
+    ElectricityPerTonCO2 = 0.331122 * U.MWh / U.t_mt  # Auxiliary electricity per tonne of CO2
     RegenerationEfficiency = 0.9  # Process efficiency factor for LT DAC
-    LCOE = 193 * U.GBP / U.t  # Cost per tonne of CO2 captured
+    LCOE = 193 * U.GBP / U.t  # Cost per tonne of CO2 captured (THIS IS INCORRECT, just a placeholder for now)
     LCOR = 119 * U.GBP / U.t  # Levelized Cost of Removal (LCOR) for low-temperature DAC, including carbon storage costs
+
 
 # E-DAC (electricity-driven DAC)
 class EDAC:
     """Parameters for electricity-driven DAC (grid DAC)."""
     LCOE = 56.84 * U.GBP / U.MWh  # Levelized cost per MWh of electricity consumed
-
+    LCOR = 55.57 * U.GBP / U.t  # Levelized Cost of Removal (LCOR) for electricity-driven DAC, including carbon storage costs
 #https://www.sciencedirect.com/science/article/pii/S2542435118302253?fr=RR-2&ref=pdf_download&rr=9a6c2b6339f763d5
 
 
