@@ -72,7 +72,7 @@ Historical weather data from ERA5, renewable capacity factors from Renewables.ni
 | Title | Author | Date | Type |
 |:------|:--------|:-----|:-----|
 | [Large-scale electricity storage](https://royalsociety.org/news-resources/projects/low-carbon-energy-programme/large-scale-electricity-storage/) | Royal Society | 2023 | Report |
-| [UK-Energy-Modelling](https://github.com/samvanstroud/UK-Energy-Modelling) | Dr Sam Vanstroud | Unknown | Repository |
+| [UK-Energy-Modelling](https://github.com/samvanstroud/UK-Energy-Modelling) | Dr Sam Vanstroud | 2025 | Repository |
 | [Exploration of Great Britain's Optimal Energy Supply Mixture and Energy Storage Scenarios Upon a Transition to Net-Zero](https://github.com/majmis1/Energy-Transition-Modelling) | Maj Mis | 2024 | Master's thesis |
 | [Modelling the UK's 2050 Energy System with Carbon Dioxide Removal](https://github.com/RSuz1/UK-Energy-Model-with-CO2-Removal) | Rei Suzuki | 2025 | Master's thesis |
 | [The Seventh Carbon Budget](https://www.theccc.org.uk/publication/the-seventh-carbon-budget/) | CCC | 2025 | Report |
