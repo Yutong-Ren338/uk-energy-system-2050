@@ -63,13 +63,11 @@ An example simulation run can be found below:
 - Renewable supply modelling from ERA5 and Renewables.ninja capacity factors
 - Hydrogen storage pathway with electrolyser charging and hydrogen generation limits
 - Medium-term storage modelling alongside hydrogen storage
-- Dispatchable low-carbon generation with gas + CCS
+- Dispatchable low-carbon generation with gas
 - Optional interconnector import modelling
 - DAC integration, including electricity-driven DAC metrics and gas-linked DAC accounting
-- Transmission and distribution losses (11.3% total)
 - System cost and energy cost calculations for simulated scenarios
-- Separate `PowerSystemNoH2` pathway for comparing non-hydrogen system designs
-- Regression tests for the main power system and no-hydrogen variant
+- A new `PowerSystemNoH2` pathway for comparing non-hydrogen system designs.
 
 ### Planned Enhancements
 - Configurable initial storage levels for sensitivity testing
