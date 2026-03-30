@@ -72,10 +72,8 @@ An example simulation run can be found below:
 ### Planned Enhancements
 - Configurable initial storage levels for sensitivity testing
 - Alternative operating modes for DAC and gas + CCS beyond surplus-only dispatch
-- Hourly time resolution
 - Interconnector cost integration and improved cost assumptions
 - Automated cost optimisation
-- Expanded emissions and removals coverage, including ERW and BECCS
 
 See `todo.md` for detailed development roadmap.
 
