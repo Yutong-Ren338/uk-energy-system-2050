@@ -70,8 +70,7 @@ An example simulation run can be found below:
 - A new `PowerSystemNoH2` pathway for comparing non-hydrogen system designs.
 
 ### Planned Enhancements
-- Configurable initial storage levels for sensitivity testing
-- Alternative operating modes for DAC and gas + CCS beyond surplus-only dispatch
+- Alternative operating modes for E-DAC beyond surplus-only dispatch
 - Interconnector cost integration and improved cost assumptions
 - Automated cost optimisation
 
