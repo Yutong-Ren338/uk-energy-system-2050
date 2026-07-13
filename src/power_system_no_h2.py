@@ -1,4 +1,4 @@
-﻿from typing import NamedTuple
+from typing import NamedTuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,7 +7,7 @@ from matplotlib import gridspec
 from pint import Quantity
 
 import src.assumptions as A
-from src.costs import energy_cost, total_system_cost
+from src.costs import energy_cost, total_system_cost, yearly_cost
 from src.data.renewable_capacity_factors import CapacityFactorSource
 from src.power_system_core_no_h2 import SimulationParameters, simulate_power_system_core_no_h2
 from src.supply_model import get_available_imports
@@ -229,8 +229,12 @@ class PowerSystemNoH2:
 
         additional_costs = 0 * U.GBP
         gas_ccs_column = f"gas_ccs_energy (TWh),RC={int(self.renewable_capacity)}GW"
-        annual_gas_ccs_energy = sim_df[gas_ccs_column].mean() * 365
-        gas_ccs_cost = annual_gas_ccs_energy * A.DispatchableGasCCS.LCOE
+        gas_ccs_capacity_factor = (sim_df[gas_ccs_column] > 0).mean()
+        gas_ccs_cost = yearly_cost(
+            capacity=self.gas_ccs_capacity * U.GW,
+            capacity_factor=gas_ccs_capacity_factor,
+            lcoe=A.DispatchableGasCCS.LCOE,
+        )
         additional_costs += gas_ccs_cost
 
         medium_storage_column = f"energy_into_medium_storage (TWh),RC={int(self.renewable_capacity)}GW"

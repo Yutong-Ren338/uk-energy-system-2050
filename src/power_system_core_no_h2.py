@@ -120,6 +120,8 @@ def handle_surplus_no_h2(
         if energy_into_medium_storage > 0:
             actual_stored_medium = energy_into_medium_storage * medium_storage_efficiency
             medium_storage_level = prev_medium_storage + actual_stored_medium
+            if medium_storage_level > max_medium_storage and medium_storage_level < max_medium_storage + FLOATING_POINT_TOLERANCE:
+                medium_storage_level = max_medium_storage
             remaining_energy -= energy_into_medium_storage
 
     return medium_storage_level, energy_into_medium_storage, remaining_energy
@@ -128,7 +130,7 @@ def handle_surplus_no_h2(
 @numba.njit(cache=True)
 def handle_dac_simple(remaining_energy: float, max_dac: float) -> tuple[float, float]:
     """Allocate surplus to DAC up to capacity; remainder is curtailed."""
-    dac_energy = remaining_energy if remaining_energy < max_dac else max_dac
+    dac_energy = min(max_dac, remaining_energy)
     curtailed_energy = remaining_energy - dac_energy
     return dac_energy, curtailed_energy
 

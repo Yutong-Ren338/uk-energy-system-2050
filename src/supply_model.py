@@ -141,4 +141,3 @@ def get_available_imports(source: CapacityFactorSource) -> pd.DataFrame:
     assert import_df is not None
     import_df["total"] = import_df.sum(axis=1)
     return import_df.astype(f"pint[{unit}]")
-

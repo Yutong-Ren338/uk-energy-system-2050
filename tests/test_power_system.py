@@ -12,6 +12,7 @@ import src.assumptions as A
 from src import demand_model, supply_model
 from src.demand_model import DemandMode
 from src.power_system import PowerSystem
+from src.power_system_core import handle_surplus
 from src.units import Units as U
 from tests.config import OUTPUT_DIR, check
 
@@ -81,6 +82,26 @@ def test_run_simulation_with_expected_outputs(power_system_model: PowerSystem, s
     check(results["gas_ccs_capacity_factor"], expected_values["gas_ccs_capacity_factor"])
     check(results["annual_gas_dac_electricity"], expected_values["annual_gas_dac_electricity"])
     check(results["annual_gas_dac_capture"], expected_values["annual_gas_dac_capture"])
+
+
+def test_medium_storage_charge_clamps_tiny_capacity_overshoot() -> None:
+    max_medium_storage = 6.882707353396209
+    prev_medium_storage = 6.3521548029144475
+    medium_storage_efficiency = 0.2601184383654971
+
+    medium_storage_level, _, _, _, _ = handle_surplus(
+        net_supply=100.0,
+        prev_medium_storage=prev_medium_storage,
+        prev_hydrogen_storage=0.0,
+        max_medium_storage=max_medium_storage,
+        max_hydrogen_storage=0.0,
+        medium_storage_max_daily_energy=100.0,
+        medium_storage_efficiency=medium_storage_efficiency,
+        max_electrolyser=0.0,
+        hydrogen_e_in=1.0,
+    )
+
+    assert medium_storage_level == max_medium_storage
 
 
 def test_run_simulation_more_aggressive_dac(sample_data_rei: pd.DataFrame) -> None:

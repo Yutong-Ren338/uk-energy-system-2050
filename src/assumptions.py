@@ -1,6 +1,7 @@
 from typing import ClassVar
 
-from src.units import Units as U, ureg
+from src.units import Units as U
+from src.units import ureg
 from src.utils import annualised_cost, convert_energy_cost
 
 # UK Energy Modelling Assumptions
@@ -56,8 +57,9 @@ class PowerSystem:
 class DispatchableGasCCS:
     Capacity = 18 * U.GW  # CB7 (Table 7.5.1): 38 GW total capacity (shared with generation from hydrogen). FES 2025 (Table 32) has 48.3 GW.
     Efficiency = 0.55  # Electrical efficiency of CCGT with CCS
-    LCOE = 114 * U.GBP / U.MWh  # from CB7 (Table 7.5.1): 165-194 £/MWh. Price includes generation from hydrogen so this is not accurate. will be 376.7 from emergency deployment paper.
-
+    LCOE = (
+        114 * U.GBP / U.MWh
+    )  # from CB7 (Table 7.5.1): 165-194 £/MWh. Price includes generation from hydrogen so this is not accurate. will be 376.7 from emergency deployment paper.
 
 
 class GasTechnologies:
@@ -162,7 +164,7 @@ class Renewables:
 class Nuclear:
     """Parameters for nuclear power generation technologies."""
 
-    Capacity = 12 * U.GW # was 12 GW in CB7 (Table 7.5.1), FES 2025 (Table 32) has 24.1 GW.
+    Capacity = 12 * U.GW  # was 12 GW in CB7 (Table 7.5.1), FES 2025 (Table 32) has 24.1 GW.
     CapacityFactor = 0.9  # Based on Hinkley Point C performance
 
     class CapacityRatios:
@@ -192,10 +194,12 @@ class Nuclear:
 # ============================================================================
 class MediumTermStorage:
     # from CB7 (Table 7.5.1)
-    Power = 7 * U.GW  # FES 2025 (Table 28) has 39.3 GW
+    Power = 39.3 * U.GW  # FES 2025 (Table 28) has 39.3 GW
     Capacity = 0.433 * U.TWh  # Energy capacity of the medium-term storage system
     RoundTripEfficiency = 0.70  # Round-trip efficiency for medium-term storage
-    LCOE = 100 * U.GBP / U.MWh  # just a placeholder for now, need to update
+    LCOE = (
+        100 * U.GBP / U.MWh
+    )  # Levelized Cost of Energy for medium-term storage (this is a placeholder, the actual cost will depend on the specific technology used)
 
 
 # ============================================================================
@@ -209,7 +213,7 @@ class HydrogenStorage:
 
         # Source: IEA via RS report
 
-        Power = 60 * U.GW  # Electrolyser power capacity #40
+        Power = 40 * U.GW  # Electrolyser power capacity #40
         Efficiency = 0.74  # Converting electrical energy to hydrogen
         Capex = 450 / GBPToUSD * U.GBP / U.kW
         Opex = Capex * 0.015
@@ -223,7 +227,7 @@ class HydrogenStorage:
         # For Capex, H21 NOE assumes £325M for 1.22 TWh. CS Smith et al (2023)
         # take the midpoint of 1-2x this number, which is £399.59M per TWh.
 
-        Capacity = 132.0 * U.TWh  # CB7 has 5-9 TWh, FES 2025 (Table 38) has 12 TWh. #50
+        Capacity = 50.0 * U.TWh  # CB7 has 5-9 TWh, FES 2025 (Table 38) has 12 TWh. #50
         Efficiency = 0.407  # Round-trip efficiency (electrolysis * generation efficiencies
         Capex = 400 * U.GBP / U.MWh
         Opex = Capex * 0.015
@@ -273,6 +277,7 @@ class DAC:
 
 class LTDAC:
     """Parameters for low-temperature DAC driven by CCGT waste heat."""
+
     GasInputPerTonCO2 = 1.1389 * U.MWh / U.t_mt  # Gas input per tonne of CO2 captured
     HeatPerTonCO2 = 4 * U.GJ / U.t_mt  # Heat input required per tonne of CO2 captured (Deprecated)
     ElectricityPerTonCO2 = 0.331122 * U.MWh / U.t_mt  # Auxiliary electricity per tonne of CO2
@@ -284,9 +289,12 @@ class LTDAC:
 # E-DAC (electricity-driven DAC)
 class EDAC:
     """Parameters for electricity-driven DAC (grid DAC)."""
+
     LCOE = 56.84 * U.GBP / U.MWh  # Levelized cost per MWh of electricity consumed
     LCOR = 55.57 * U.GBP / U.t  # Levelized Cost of Removal (LCOR) for electricity-driven DAC, including carbon storage costs
-#https://www.sciencedirect.com/science/article/pii/S2542435118302253?fr=RR-2&ref=pdf_download&rr=9a6c2b6339f763d5
+
+
+# https://www.sciencedirect.com/science/article/pii/S2542435118302253?fr=RR-2&ref=pdf_download&rr=9a6c2b6339f763d5
 
 
 class GasTechDACParameters:
@@ -329,6 +337,7 @@ class GasTechDACParameters:
         "Gas Turbine (simple cycle)": 20,
         "CCGT with E-DAC": 10,
     }
+
 
 # ============================================================================
 # MISCELLANEOUS

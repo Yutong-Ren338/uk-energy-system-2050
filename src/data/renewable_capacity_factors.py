@@ -6,7 +6,11 @@ from src import DATA_DIR
 from src.data.era5 import get_2021_data, get_2024_data
 from src.data.ninja_2025_capacity_factors import (
     WindType as NinjaWindType,
+)
+from src.data.ninja_2025_capacity_factors import (
     get_ninja_2025_capacity_factors as _get_ninja_2025_capacity_factors,
+)
+from src.data.ninja_2025_capacity_factors import (
     list_available_wind_regions as _list_available_wind_regions,
 )
 from src.units import Units as U
@@ -117,5 +121,3 @@ def get_ninja_2025_capacity_factors(
 def list_ninja_2025_wind_regions(wind_type: WindType) -> list[str]:
     """List region codes available for the specified wind dataset."""
     return _list_available_wind_regions(wind_type)
-
-

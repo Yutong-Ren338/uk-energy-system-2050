@@ -16,8 +16,6 @@ import pandas as pd
 from src import DATA_DIR
 from src.units import Units as U
 
-from collections.abc import Mapping, Sequence
-
 WindType = Literal["onshore", "offshore"]
 
 _NINJA_2025_DIR = DATA_DIR / "ninja_2025"
@@ -67,39 +65,30 @@ def list_available_wind_regions(wind_type: WindType) -> list[str]:
     return sorted(df.columns.tolist())
 
 
-def _combine_regions(
-    df: pd.DataFrame, region_code: str | list[str] | dict[str, float]
-) -> pd.Series:
+def _combine_regions(df: pd.DataFrame, region_code: str | list[str] | dict[str, float]) -> pd.Series:
     """Combine regions by averaging (list) or weighted average (dict)."""
     if isinstance(region_code, str):
         column_key = (region_code or _DEFAULT_REGION).upper()
         if column_key not in df.columns:
             available = ", ".join(df.columns)
-            raise ValueError(
-                f"Region '{region_code}' not found. Available regions: {available}"
-            )
+            raise ValueError(f"Region '{region_code}' not found. Available regions: {available}")
         return df[column_key]
-    elif isinstance(region_code, list):
+    if isinstance(region_code, list):
         columns = [(code or _DEFAULT_REGION).upper() for code in region_code]
         missing = [c for c in columns if c not in df.columns]
         if missing:
             available = ", ".join(df.columns)
-            raise ValueError(
-                f"Regions {missing} not found. Available regions: {available}"
-            )
+            raise ValueError(f"Regions {missing} not found. Available regions: {available}")
         return df[columns].mean(axis=1)
-    elif isinstance(region_code, dict):
+    if isinstance(region_code, dict):
         columns = [(code or _DEFAULT_REGION).upper() for code in region_code.keys()]
         missing = [c for c in columns if c not in df.columns]
         if missing:
             available = ", ".join(df.columns)
-            raise ValueError(
-                f"Regions {missing} not found. Available regions: {available}"
-            )
+            raise ValueError(f"Regions {missing} not found. Available regions: {available}")
         weights = list(region_code.values())
         return (df[columns] * weights).sum(axis=1) / sum(weights)
-    else:
-        raise TypeError(f"Unsupported region_code type: {type(region_code)}")
+    raise TypeError(f"Unsupported region_code type: {type(region_code)}")
 
 
 def _load_pv_capacity_factor(resample: str | None) -> pd.Series:
@@ -111,17 +100,12 @@ def _load_pv_capacity_factor(resample: str | None) -> pd.Series:
     return series
 
 
-def _load_wind_capacity_factor(
-    wind_type: WindType, region_code: str, resample: str | None
-) -> pd.Series:
+def _load_wind_capacity_factor(wind_type: WindType, region_code: str, resample: str | None) -> pd.Series:
     df = _load_wind_dataframe(wind_type, resample=resample)
     column_key = (region_code or _DEFAULT_REGION).upper()
     if column_key not in df.columns:
         available = ", ".join(df.columns)
-        raise ValueError(
-            f"Region '{region_code}' not found for {wind_type} wind. "
-            f"Available regions: {available}"
-        )
+        raise ValueError(f"Region '{region_code}' not found for {wind_type} wind. Available regions: {available}")
     return df[column_key]
 
 

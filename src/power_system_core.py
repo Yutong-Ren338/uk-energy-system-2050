@@ -202,6 +202,8 @@ def handle_surplus(
             # Account for storage efficiency
             actual_stored_medium = energy_into_medium_storage * medium_storage_efficiency
             medium_storage_level = prev_medium_storage + actual_stored_medium
+            if medium_storage_level > max_medium_storage and medium_storage_level < max_medium_storage + FLOATING_POINT_TOLERANCE:
+                medium_storage_level = max_medium_storage
             remaining_energy -= energy_into_medium_storage
 
     # Second priority: hydrogen storage via electrolyser
@@ -215,6 +217,8 @@ def handle_surplus(
             # Account for storage efficiency
             actual_stored_hydrogen = energy_into_hydrogen_storage * hydrogen_e_in
             hydrogen_storage_level = prev_hydrogen_storage + actual_stored_hydrogen
+            if hydrogen_storage_level > max_hydrogen_storage and hydrogen_storage_level < max_hydrogen_storage + FLOATING_POINT_TOLERANCE:
+                hydrogen_storage_level = max_hydrogen_storage
             remaining_energy -= energy_into_hydrogen_storage
 
     return (

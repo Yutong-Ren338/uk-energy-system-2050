@@ -29,7 +29,7 @@ class ScenarioResult:
     sim_df: pd.DataFrame | None
     analysis: dict | None
     energy_cost: Quantity
-    lt_dac_result: "LTDACResult | None" = None
+    lt_dac_result: LTDACResult | None = None
 
 
 @dataclass
@@ -211,32 +211,22 @@ def low_or_zero_hydrogen_storage(
     )
 
 
-def _estimate_gas_emissions(
-    annual_gas_energy: Quantity, *, intensity: Quantity | None = None
-) -> Quantity:
+def _estimate_gas_emissions(annual_gas_energy: Quantity, *, intensity: Quantity | None = None) -> Quantity:
     """Estimate residual CO2 from annual gas generation.https://ourworldindata.org/grapher/carbon-dioxide-emissions-factor?tab=table"""
-    emissions_intensity = (
-        (201.96 * U.t_mt / U.GWh).to(U.Mt_mt / U.TWh) if intensity is None else intensity
-    )
+    emissions_intensity = (201.96 * U.t_mt / U.GWh).to(U.Mt_mt / U.TWh) if intensity is None else intensity
     assert annual_gas_energy.units == U.TWh, "Gas energy must be in TWh"
     return (annual_gas_energy * emissions_intensity).to(U.Mt_mt)
 
 
-def electricity_to_capture_co2(
-    residual_co2: Quantity, *, electricity_per_t_co2: Quantity | None = None
-) -> Quantity:
+def electricity_to_capture_co2(residual_co2: Quantity, *, electricity_per_t_co2: Quantity | None = None) -> Quantity:
     """Calculate auxiliary electricity needed to capture a given mass of CO2 via LT DAC."""
-    electricity_per_t_co2 = (
-        A.LTDAC.ElectricityPerTonCO2 if electricity_per_t_co2 is None else electricity_per_t_co2
-    )
+    electricity_per_t_co2 = A.LTDAC.ElectricityPerTonCO2 if electricity_per_t_co2 is None else electricity_per_t_co2
     assert electricity_per_t_co2.units == U.MWh / U.t_mt, "Electricity intensity must be in MWh/tCO2"
     co2_tonnes = residual_co2.to(U.t_mt)
     return (co2_tonnes * electricity_per_t_co2).to(U.TWh)
 
 
-def capital_cost_to_capture_co2(
-    residual_co2: Quantity, *, cost_per_t_co2: Quantity | None = None
-) -> Quantity:
+def capital_cost_to_capture_co2(residual_co2: Quantity, *, cost_per_t_co2: Quantity | None = None) -> Quantity:
     """Calculate capital cost to capture a given mass of CO2 at $2170/t by default."""
     default_cost = (2170 / A.GBPToUSD) * U.GBP / U.t_mt
     cost_per_t_co2 = default_cost if cost_per_t_co2 is None else cost_per_t_co2
@@ -342,6 +332,4 @@ def find_gas_only_capacity_no_hydrogen(
 
         gas_capacity += step
 
-    raise RuntimeError(
-        f"Simulation failed to meet demand up to {max_capacity:~0.1f} gas CCS capacity"
-    )
+    raise RuntimeError(f"Simulation failed to meet demand up to {max_capacity:~0.1f} gas CCS capacity")

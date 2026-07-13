@@ -1,5 +1,4 @@
-"""
-Insert a preamble code cell into a Jupyter notebook that:
+r"""Insert a preamble code cell into a Jupyter notebook that:
 
 - Ensures the output directory exists before saving figures
 - Adds a default .png extension when missing
@@ -15,7 +14,6 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-
 
 PREAMBLE_MARK = "# <<SAFE_SAVEFIG_PRELUDE>>"
 

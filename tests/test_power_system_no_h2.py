@@ -2,6 +2,7 @@ import pandas as pd
 
 import src.assumptions as A
 from src.costs import total_system_cost, yearly_cost
+from src.power_system_core_no_h2 import handle_surplus_no_h2
 from src.power_system_no_h2 import PowerSystemNoH2
 from src.units import Units as U
 
@@ -40,3 +41,19 @@ def test_no_h2_gas_cost_uses_capacity_factor_based_yearly_cost() -> None:
     )
 
     assert actual_cost == base_cost + expected_gas_cost
+
+
+def test_no_h2_medium_storage_charge_clamps_tiny_capacity_overshoot() -> None:
+    max_medium_storage = 6.882707353396209
+    prev_medium_storage = 6.3521548029144475
+    medium_storage_efficiency = 0.2601184383654971
+
+    medium_storage_level, _, _ = handle_surplus_no_h2(
+        net_supply=100.0,
+        prev_medium_storage=prev_medium_storage,
+        max_medium_storage=max_medium_storage,
+        medium_storage_max_daily_energy=100.0,
+        medium_storage_efficiency=medium_storage_efficiency,
+    )
+
+    assert medium_storage_level == max_medium_storage

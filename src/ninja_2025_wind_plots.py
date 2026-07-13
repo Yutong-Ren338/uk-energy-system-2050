@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pint import Quantity
 
-import src.matplotlib_style  # applies project-wide plotting defaults
 from src.data.ninja_2025_capacity_factors import (
     WindType,
     get_ninja_2025_capacity_factors,
@@ -26,9 +25,7 @@ RegionSelector: TypeAlias = str | Sequence[str]
 TimeLike: TypeAlias = str | pd.Timestamp | None
 
 DEFAULT_REGION = "NATIONAL"
-_DEFAULT_CAPACITY_DATASET = Path(
-    r"C:\Users\Yutong Ren\AppData\Local\Temp\Rar$DIa72688.31523.rartemp\Dataset_SE.dta"
-)
+_DEFAULT_CAPACITY_DATASET = Path(r"C:\Users\Yutong Ren\AppData\Local\Temp\Rar$DIa72688.31523.rartemp\Dataset_SE.dta")
 
 
 def available_ninja_2025_regions(wind_type: WindType) -> list[str]:
@@ -43,7 +40,7 @@ def load_ninja_2025_wind_series(
     start: TimeLike = None,
     end: TimeLike = None,
     resample: str | None = "D",
-    capacity_gw: Quantity | float | int | None = None,
+    capacity_gw: Quantity | float | None = None,
     dataset_path: str | Path | None = None,
     dataset_year: int | None = None,
     include_all_regions: bool = False,
@@ -108,7 +105,7 @@ def plot_ninja_2025_wind_power(
     start: TimeLike = None,
     end: TimeLike = None,
     resample: str | None = "D",
-    capacity_gw: Quantity | float | int | None = None,
+    capacity_gw: Quantity | float | None = None,
     ax: plt.Axes | None = None,
     figsize: tuple[float, float] | None = (12, 6),
     dataset_path: str | Path | None = None,
@@ -149,9 +146,7 @@ def plot_ninja_2025_wind_power(
         include_all_regions=include_all_regions,
     )
 
-    fig, plot_ax = (
-        (ax.figure, ax) if ax is not None else plt.subplots(figsize=figsize)
-    )
+    fig, plot_ax = (ax.figure, ax) if ax is not None else plt.subplots(figsize=figsize)
     ylabel = "Wind power"
 
     series_to_plot = series if isinstance(series, pd.DataFrame) else series.to_frame()
@@ -185,7 +180,7 @@ def _lookup_capacity(
     wind_type: WindType,
     dataset_path: str | Path | None,
     dataset_year: int | None,
-    fallback_capacity: Quantity | float | int | None,
+    fallback_capacity: Quantity | float | None,
 ) -> Quantity | None:
     """Return capacity from dataset if present; otherwise fallback."""
     dataset_capacity = _read_capacity_from_dataset(
@@ -201,7 +196,7 @@ def _lookup_capacity(
     return _coerce_capacity(fallback_capacity)
 
 
-def _coerce_capacity(capacity: Quantity | float | int) -> Quantity:
+def _coerce_capacity(capacity: Quantity | float) -> Quantity:
     quantity = capacity if isinstance(capacity, Quantity) else float(capacity) * U.GW
     return quantity.to(U.GW)
 
