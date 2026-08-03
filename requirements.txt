@@ -1,0 +1,12 @@
+streamlit
+pandas
+numpy
+plotly
+matplotlib
+pint
+pint-pandas
+numba
+xarray
+netCDF4
+openpyxl
+requests

@@ -13,3 +13,14 @@ __pycache__/
 .venv/
 .pytest_cache/
 .vscode/
+
+# Teaching site (Streamlit) deployment data allow-list
+!requirements.txt
+!runtime.txt
+!data/ERA5_full_demand_UK_1979_2019_hourly.csv
+!data/ERA5_HDD_all_countries_1979_2019_inclusive.csv
+!data/UK_gas_demand_processed.csv
+!data/ccc_daily_demand_2050.csv
+!data/ERA5_2024/solar_capacity_factor/GB__ERA5__solar__capacity_factor_time_series.nc
+!data/ERA5_2024/wind_capacity_factor/GB__ERA5__wind__capacity_factor_time_series__onshore.nc
+!data/ERA5_2024/wind_capacity_factor/GB__ERA5__wind__capacity_factor_time_series__offshore.nc
