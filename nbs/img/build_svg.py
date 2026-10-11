@@ -9,6 +9,13 @@ here as base64 <image> tags. See sources/README.md for what each file is and how
 regenerate it - and for the earlier real-screenshot versions, kept for reference but
 no longer used (real charts stayed too small to read once shrunk into these panels).
 
+Font sizes: the figure is meant to be printed full text width (figure* in the
+two-column elsarticle template, ~522 pt), so 1 viewBox unit ~= 0.52 pt. The FS_*
+constants below are chosen so labels print at roughly the paper's body-text size
+(FS_MAIN 18 -> ~9.4 pt, FS_SUB 16 -> ~8.4 pt, FS_STEP 21 -> ~11 pt). text() checks
+every label against the width it has to fit in and fails loudly if it overflows, so
+after changing a label or a font size just re-run the script.
+
 To edit the figure: change a coordinate/color/label below, then run:
     python nbs/img/build_svg.py
 from the repo root (or anywhere - paths below are relative to this file), and
@@ -18,19 +25,31 @@ re-execute the notebook so its embedded copy picks up the change:
 
 To sanity-check layout while iterating, render the SVG to PNG with a headless
 browser and inspect it, e.g. (Windows/Edge):
-    msedge --headless --disable-gpu --screenshot=preview.png --window-size=1050,1450 model_structure_diagram.svg
+    msedge --headless --disable-gpu --screenshot=preview.png --window-size=1000,1268 model_structure_diagram.svg
 """
 
 import base64
+import html
 import os
+import pathlib
+
+from PIL import ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 IMG_DIR = os.path.join(HERE, "sources")
 OUT_PATH = os.path.join(HERE, "model_structure_diagram.svg")
 
+FS_STEP = 21  # step titles (bold)
+FS_HEAD = 18  # box headings (bold)
+FS_MAIN = 18  # main labels
+FS_SUB = 16  # secondary / explanatory labels
+
+INK = "#1F2A44"
+MUTED = "#4A5568"
+
 
 def b64(name):
-    with open(os.path.join(IMG_DIR, name), "rb") as f:
+    with pathlib.Path(os.path.join(IMG_DIR, name)).open("rb") as f:
         return base64.b64encode(f.read()).decode("ascii")
 
 
@@ -44,36 +63,73 @@ IMAGES = {
 
 
 def img_tag(key, x, y, w, h):
-    return (
-        f'<image href="data:image/png;base64,{IMAGES[key]}" '
-        f'x="{x}" y="{y}" width="{w}" height="{h}" '
-        f'preserveAspectRatio="xMidYMid meet"/>'
-    )
+    return f'<image href="data:image/png;base64,{IMAGES[key]}" x="{x}" y="{y}" width="{w}" height="{h}" preserveAspectRatio="xMidYMid meet"/>'
+
+
+_FONTS = {}
+
+
+def text_width(s, size, bold=False, italic=False):
+    """Approximate rendered width of `s` (Arial metrics, close to Helvetica)."""
+    name = "arialbd.ttf" if bold else ("ariali.ttf" if italic else "arial.ttf")
+    if (name, size) not in _FONTS:
+        _FONTS[name, size] = ImageFont.truetype(name, size)
+    return _FONTS[name, size].getlength(html.unescape(s))
+
+
+def text(x, y, s, size=FS_MAIN, *, max_w, fill=INK, anchor="middle", bold=False, italic=False):
+    """SVG <text>, asserting the label fits in `max_w` viewBox units."""
+    w = text_width(s, size, bold, italic)
+    assert w <= max_w, f"label too wide ({w:.0f} > {max_w:.0f}): {html.unescape(s)!r}"
+    attrs = f'x="{x}" y="{y}" font-size="{size}" fill="{fill}"'
+    if anchor != "start":
+        attrs += f' text-anchor="{anchor}"'
+    if bold:
+        attrs += ' font-weight="700"'
+    if italic:
+        attrs += ' font-style="italic"'
+    return f"<text {attrs}>{s}</text>"
+
+
+def step_frame(y, h, title):
+    parts.append(f'<rect x="20" y="{y}" width="960" height="{h}" rx="18" fill="#FAFBFC" stroke="#94A3B8" stroke-width="2" stroke-dasharray="7 5"/>')
+    parts.append(text(40, y + 31, title, FS_STEP, max_w=920, anchor="start", bold=True))
+
+
+def arrow(d, width=1.6, color=INK, marker="arrow", extra=""):
+    parts.append(f'<path d="{d}" fill="none" stroke="{color}" stroke-width="{width}" {extra}marker-end="url(#{marker})"/>')
+
+
+def labelled_box(x, y, w, h, lines, fill, stroke, dash=False):
+    """Rounded box with vertically centred lines; each line is (label, size)."""
+    dash_attr = ' stroke-dasharray="4 3"' if dash else ""
+    parts.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="{fill}" stroke="{stroke}" stroke-width="1.5"{dash_attr}/>')
+    line_h = 20
+    first = y + h / 2 - (len(lines) - 1) * line_h / 2 + 6
+    for i, (s, size) in enumerate(lines):
+        parts.append(text(x + w / 2, first + i * line_h, s, size, max_w=w - 12, fill=INK if size == FS_MAIN else MUTED))
 
 
 parts = []
-VIEWBOX_H = 1470
+VIEWBOX_H = 1268
 
 parts.append(
     f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 {VIEWBOX_H}" '
     'font-family="Helvetica, Arial, sans-serif" role="img" '
     'aria-label="Four-step structure of the UK power system model: data and assumption '
-    'processing, supply-demand balance modelling, daily dispatch simulation with a cost '
-    'feedback loop, and outputs (an enlarged time-series chart plus a bullet-point summary '
-    'of annual metrics, scenario search, and the teaching app). Each data/output panel is '
+    "processing, supply-demand balance modelling, daily dispatch simulation with a cost "
+    "feedback loop, and outputs (an enlarged time-series chart plus a bullet-point summary "
+    "of annual metrics, scenario search, and the teaching app). Each data/output panel is "
     'illustrated with a schematic fake-data chart showing the type of data, not real values.">'
 )
 parts.append("<title>UK power system model structure</title>")
 parts.append(
-    """<defs>
+    f"""<defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#1F2A44"/>
+      <path d="M0,0 L10,5 L0,10 z" fill="{INK}"/>
     </marker>
     <marker id="arrowMuted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#7A5230"/>
-    </marker>
-    <marker id="arrowLoop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#5B3E75"/>
     </marker>
   </defs>"""
 )
@@ -82,169 +138,213 @@ parts.append(f'<rect x="0" y="0" width="1000" height="{VIEWBOX_H}" fill="#FFFFFF
 # ============================================================
 # STEP 1 : DATA & ASSUMPTION PROCESSING
 # ============================================================
-parts.append(
-    '<rect x="20" y="20" width="960" height="290" rx="18" fill="#FAFBFC" '
-    'stroke="#94A3B8" stroke-width="2" stroke-dasharray="7 5"/>'
-)
-parts.append('<text x="44" y="52" font-size="17" font-weight="700" fill="#1F2A44">Step 1 &#183; Data &amp; assumption processing</text>')
+STEP1_Y, STEP1_H = 20, 284
+step_frame(STEP1_Y, STEP1_H, "Step 1 &#183; Data &amp; assumption processing")
 
 box1_defs = [
-    (50, "weather", "Weather reanalysis (ERA5 / Renewables.ninja)", "&#8594; daily solar / wind capacity factors"),
-    (365, "demand", "Historical demand + Carbon Budget (CB7) projections", "&#8594; daily 2050 demand series (4 modes)"),
-    (680, "cost", "DESNZ technology cost data (Annex A/B)", "&#8594; discounted-cash-flow LCOE"),
+    (40, "weather", ("Weather reanalysis", "(ERA5 / Renewables.ninja)"), "&#8594; daily solar/wind capacity factors"),
+    (352, "demand", ("Historical demand +", "CCC CB7 projections"), "&#8594; daily 2050 demand (4 modes)"),
+    (664, "cost", ("DESNZ technology cost", "data (Annex A/B)"), "&#8594; discounted-cash-flow LCOE"),
 ]
-BOX1_Y = 72
-BOX1_W = 270
-BOX1_H = 150
-for bx, key, cap1, cap2 in box1_defs:
+BOX1_Y, BOX1_W, BOX1_H = STEP1_Y + 42, 296, 160
+BOX1_IMG_H = 80
+for bx, key, (cap1, cap2), cap3 in box1_defs:
     parts.append(f'<rect x="{bx}" y="{BOX1_Y}" width="{BOX1_W}" height="{BOX1_H}" rx="10" fill="#EEF1F5" stroke="#64748B" stroke-width="1.6"/>')
-    parts.append(f'<rect x="{bx+10}" y="{BOX1_Y+10}" width="{BOX1_W-20}" height="92" fill="#FFFFFF" stroke="#D7DEE7" stroke-width="1"/>')
-    parts.append(img_tag(key, bx + 10, BOX1_Y + 10, BOX1_W - 20, 92))
+    parts.append(
+        f'<rect x="{bx + 8}" y="{BOX1_Y + 8}" width="{BOX1_W - 16}" height="{BOX1_IMG_H}" fill="#FFFFFF" stroke="#D7DEE7" stroke-width="1"/>'
+    )
+    parts.append(img_tag(key, bx + 8, BOX1_Y + 8, BOX1_W - 16, BOX1_IMG_H))
     cx = bx + BOX1_W / 2
-    parts.append(f'<text x="{cx}" y="{BOX1_Y+120}" font-size="10.8" fill="#1F2A44" text-anchor="middle">{cap1}</text>')
-    parts.append(f'<text x="{cx}" y="{BOX1_Y+136}" font-size="10.3" fill="#4A5568" text-anchor="middle">{cap2}</text>')
+    ty = BOX1_Y + 8 + BOX1_IMG_H + 21
+    parts.append(text(cx, ty, cap1, max_w=BOX1_W - 12))
+    parts.append(text(cx, ty + 20, cap2, max_w=BOX1_W - 12))
+    parts.append(text(cx, ty + 41, cap3, FS_SUB, max_w=BOX1_W - 12, fill=MUTED))
 
 # dataset cylinders (below boxes A+B combined, and box C)
-CYL_TOP = 244
-CYL_BODY_H = 38
-for ccx, lines in [(210, ("Capacity-factor &amp;", "demand time series")), (725, ("Technology cost", "assumptions (LCOE)"))]:
-    color = "#4E8B5C" if ccx == 725 else "#64748B"
-    fill = "#E2EFE3" if ccx == 725 else "#E8ECF1"
+BOX1_BOTTOM = BOX1_Y + BOX1_H
+CYL_TOP, CYL_BODY_H, CYL_RX = BOX1_BOTTOM + 20, 44, 100
+CYL_BOTTOM = CYL_TOP + CYL_BODY_H + 10
+CYL_L, CYL_R = 250, 780
+for ccx, lines in [(CYL_L, ("Capacity-factor &amp;", "demand time series")), (CYL_R, ("Technology cost", "assumptions (LCOE)"))]:
+    color = "#4E8B5C" if ccx == CYL_R else "#64748B"
+    fill = "#E2EFE3" if ccx == CYL_R else "#E8ECF1"
     parts.append(
-        f'<path d="M{ccx-70},{CYL_TOP} a70,10 0 0 0 140,0 v{CYL_BODY_H} a70,10 0 0 1 -140,0 z" '
+        f'<path d="M{ccx - CYL_RX},{CYL_TOP} a{CYL_RX},10 0 0 0 {2 * CYL_RX},0 v{CYL_BODY_H} a{CYL_RX},10 0 0 1 -{2 * CYL_RX},0 z" '
         f'fill="{fill}" stroke="{color}" stroke-width="1.6"/>'
     )
-    parts.append(f'<ellipse cx="{ccx}" cy="{CYL_TOP}" rx="70" ry="10" fill="{fill}" stroke="{color}" stroke-width="1.6"/>')
-    parts.append(f'<text x="{ccx}" y="{CYL_TOP+22}" font-size="11.3" fill="#1F2A44" text-anchor="middle">{lines[0]}</text>')
-    parts.append(f'<text x="{ccx}" y="{CYL_TOP+36}" font-size="11.3" fill="#1F2A44" text-anchor="middle">{lines[1]}</text>')
+    parts.append(f'<ellipse cx="{ccx}" cy="{CYL_TOP}" rx="{CYL_RX}" ry="10" fill="{fill}" stroke="{color}" stroke-width="1.6"/>')
+    parts.append(text(ccx, CYL_TOP + 26, lines[0], max_w=2 * CYL_RX - 10))
+    parts.append(text(ccx, CYL_TOP + 46, lines[1], max_w=2 * CYL_RX - 10))
 
-BOX1_BOTTOM = BOX1_Y + BOX1_H  # 222
-parts.append(f'<path d="M170,{BOX1_BOTTOM} L190,{CYL_TOP}" fill="none" stroke="#1F2A44" stroke-width="1.6" marker-end="url(#arrow)"/>')
-parts.append(f'<path d="M470,{BOX1_BOTTOM} L235,{CYL_TOP}" fill="none" stroke="#1F2A44" stroke-width="1.6" marker-end="url(#arrow)"/>')
-parts.append(f'<path d="M815,{BOX1_BOTTOM} L740,{CYL_TOP}" fill="none" stroke="#1F2A44" stroke-width="1.6" marker-end="url(#arrow)"/>')
+arrow(f"M188,{BOX1_BOTTOM} L225,{CYL_TOP - 2}")
+arrow(f"M500,{BOX1_BOTTOM} L285,{CYL_TOP - 2}")
+arrow(f"M812,{BOX1_BOTTOM} L795,{CYL_TOP - 2}")
 
 # ============================================================
 # STEP 2 : SUPPLY-DEMAND BALANCE MODELLING
 # ============================================================
-parts.append(
-    '<rect x="20" y="335" width="960" height="245" rx="18" fill="#FAFBFC" '
-    'stroke="#94A3B8" stroke-width="2" stroke-dasharray="7 5"/>'
+STEP2_Y, STEP2_H = STEP1_Y + STEP1_H + 20, 190
+step_frame(STEP2_Y, STEP2_H, "Step 2 &#183; Supply&#8211;demand balance modelling")
+
+# two input boxes (solar+wind, and everything else merged into "other") stacked
+# with equal width so each takes one short, symmetric diagonal straight into the sum
+BOX_X, BOX_W, BOX_H = 40, 250, 58
+ROW1_Y = STEP2_Y + 46
+ROW1_MID = ROW1_Y + BOX_H / 2
+labelled_box(BOX_X, ROW1_Y, BOX_W, BOX_H, [("Solar +", FS_MAIN), ("onshore/offshore wind", FS_MAIN)], "#DCE8F5", "#3B6FB0")
+
+ROW2_Y = ROW1_Y + BOX_H + 12
+ROW2_MID = ROW2_Y + BOX_H / 2
+labelled_box(BOX_X, ROW2_Y, BOX_W, BOX_H, [("Other supply", FS_MAIN), ("imports, nuclear baseload, etc.", FS_SUB)], "#DCE8F5", "#3B6FB0")
+
+SUM_CX, SUM_R = 345, 20
+SUM_CY = (ROW1_Y + ROW2_Y + BOX_H) / 2
+parts.append(f'<circle cx="{SUM_CX}" cy="{SUM_CY}" r="{SUM_R}" fill="#FFFFFF" stroke="#3B6FB0" stroke-width="1.8"/>')
+parts.append(f'<text x="{SUM_CX}" y="{SUM_CY + 7}" font-size="20" fill="{INK}" text-anchor="middle">&#8721;</text>')
+
+# both boxes are the same width, so each arrow is one clean, symmetric diagonal into the sum
+BOX_R = BOX_X + BOX_W
+arrow(f"M{BOX_R},{ROW1_MID} L{BOX_R + 22},{ROW1_MID} L{SUM_CX - 15},{SUM_CY - 12}", 1.4)
+arrow(f"M{BOX_R},{ROW2_MID} L{BOX_R + 22},{ROW2_MID} L{SUM_CX - 15},{SUM_CY + 12}", 1.4)
+
+DEM_W, DEM_H = 220, 80
+DEM_X, DEM_Y = SUM_CX + SUM_R + 30, SUM_CY - DEM_H / 2
+labelled_box(
+    DEM_X,
+    DEM_Y,
+    DEM_W,
+    DEM_H,
+    [("&#8722; demand", FS_MAIN), ("&#8722; transmission losses", FS_MAIN), ("(daily, TWh)", FS_SUB)],
+    "#DCE8F5",
+    "#3B6FB0",
 )
-parts.append('<text x="44" y="367" font-size="17" font-weight="700" fill="#1F2A44">Step 2 &#183; Supply&#8211;demand balance modelling</text>')
+arrow(f"M{SUM_CX + SUM_R},{SUM_CY} L{DEM_X - 5},{SUM_CY}")
 
-parts.append('<rect x="50" y="386" width="150" height="66" rx="8" fill="#DCE8F5" stroke="#3B6FB0" stroke-width="1.6"/>')
-parts.append('<text x="125" y="415" font-size="11.5" fill="#1F2A44" text-anchor="middle">Solar +</text>')
-parts.append('<text x="125" y="430" font-size="11.5" fill="#1F2A44" text-anchor="middle">onshore/offshore wind</text>')
-
-parts.append('<rect x="215" y="386" width="150" height="66" rx="8" fill="#DCE8F5" stroke="#3B6FB0" stroke-width="1.6"/>')
-parts.append('<text x="290" y="415" font-size="11.5" fill="#1F2A44" text-anchor="middle">Nuclear</text>')
-parts.append('<text x="290" y="430" font-size="11.5" fill="#1F2A44" text-anchor="middle">baseload</text>')
-
-parts.append('<rect x="50" y="466" width="315" height="60" rx="8" fill="#DCE8F5" stroke="#3B6FB0" stroke-width="1.6"/>')
-parts.append('<text x="207" y="491" font-size="11.5" fill="#1F2A44" text-anchor="middle">Interconnector imports (optional)</text>')
-parts.append('<text x="207" y="506" font-size="11" fill="#4A5568" text-anchor="middle">from neighbouring countries\' own surplus days</text>')
-
-parts.append('<circle cx="440" cy="452" r="20" fill="#FFFFFF" stroke="#3B6FB0" stroke-width="1.8"/>')
-parts.append('<text x="440" y="458" font-size="16" fill="#1F2A44" text-anchor="middle">&#8721;</text>')
-
-parts.append('<path d="M200,419 L200,460 L419,460" fill="none" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)"/>')
-parts.append('<path d="M365,419 L425,442" fill="none" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)"/>')
-parts.append('<path d="M365,491 L425,461" fill="none" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)"/>')
-
-parts.append('<rect x="500" y="422" width="205" height="60" rx="8" fill="#DCE8F5" stroke="#3B6FB0" stroke-width="1.6"/>')
-parts.append('<text x="602" y="447" font-size="11.5" fill="#1F2A44" text-anchor="middle">&#8722; demand, &#8722; transmission losses</text>')
-parts.append('<text x="602" y="463" font-size="10.5" fill="#4A5568" text-anchor="middle">(daily, TWh)</text>')
-parts.append('<path d="M460,452 L495,452" fill="none" stroke="#1F2A44" stroke-width="1.6" marker-end="url(#arrow)"/>')
-
-# output net-supply box with real chart
-NS_X, NS_Y, NS_W, NS_H = 740, 388, 225, 136
+# output net-supply box with schematic chart
+NS_W, NS_H = 300, 132
+NS_X, NS_Y = 960 - NS_W, SUM_CY - NS_H / 2
+NS_CX = NS_X + NS_W / 2
 parts.append(f'<rect x="{NS_X}" y="{NS_Y}" width="{NS_W}" height="{NS_H}" rx="8" fill="#DCE8F5" stroke="#3B6FB0" stroke-width="1.6"/>')
-parts.append(f'<text x="{NS_X+NS_W/2}" y="{NS_Y+16}" font-size="10.8" font-weight="700" fill="#1F2A44" text-anchor="middle">Daily net supply&#8722;demand</text>')
-parts.append(f'<rect x="{NS_X+10}" y="{NS_Y+22}" width="{NS_W-20}" height="82" fill="#FFFFFF" stroke="#B9CBE3" stroke-width="1"/>')
-parts.append(img_tag("netsupply", NS_X + 10, NS_Y + 22, NS_W - 20, 82))
-parts.append(f'<text x="{NS_X+NS_W/2}" y="{NS_Y+NS_H-8}" font-size="9.6" fill="#4A5568" text-anchor="middle">swept over 100&#8211;490 GW renewables</text>')
-parts.append(f'<path d="M705,452 L{NS_X-5},452" fill="none" stroke="#1F2A44" stroke-width="1.6" marker-end="url(#arrow)"/>')
-
-parts.append('<path d="M725,280 L725,305 L985,305 L985,905" fill="none" stroke="#4E8B5C" stroke-width="1.6"/>')
-parts.append('<text x="900" y="321" font-size="10.5" fill="#4A5568" text-anchor="end">cost assumptions</text>')
-
-NS_CX = NS_X + NS_W / 2  # 852.5
+parts.append(text(NS_CX, NS_Y + 22, "Daily net supply&#8722;demand", FS_HEAD, max_w=NS_W - 12, bold=True))
+parts.append(f'<rect x="{NS_X + 8}" y="{NS_Y + 30}" width="{NS_W - 16}" height="72" fill="#FFFFFF" stroke="#B9CBE3" stroke-width="1"/>')
+parts.append(img_tag("netsupply", NS_X + 8, NS_Y + 30, NS_W - 16, 72))
+parts.append(text(NS_CX, NS_Y + NS_H - 11, "swept over 100&#8211;490 GW renewables", FS_SUB, max_w=NS_W - 12, fill=MUTED))
+arrow(f"M{DEM_X + DEM_W},{SUM_CY} L{NS_X - 5},{SUM_CY}")
 
 # ============================================================
 # STEP 3 : DAILY DISPATCH SIMULATION & COST FEEDBACK
 # ============================================================
+STEP3_Y = STEP2_Y + STEP2_H + 20
+step_frame(STEP3_Y, 0, "")  # placeholder, replaced below once the height is known
+step3_frame_idx = len(parts) - 2
+
+# the "one day at a time" box shares the title row, to the right of the step title
+DAILY_W, DAILY_H = 300, 38
+DAILY_X, DAILY_Y = NS_CX - DAILY_W / 2, STEP3_Y + 12
+arrow(f"M{NS_CX},{NS_Y + NS_H} L{NS_CX},{DAILY_Y}")
+assert 40 + text_width("Step 3 &#183; Daily dispatch simulation &amp; cost feedback", FS_STEP, bold=True) < DAILY_X - 10
+labelled_box(DAILY_X, DAILY_Y, DAILY_W, DAILY_H, [("Net supply, one day at a time", FS_MAIN)], "#FCE9D8", "#C2703D")
+
+CHAIN_X0, CHAIN_W, CHAIN_GAP, CHAIN_H = 40, 168, 20, 64
+chain_xs = [CHAIN_X0 + i * (CHAIN_W + CHAIN_GAP) for i in range(5)]
+
+BRANCH_Y = DAILY_Y + DAILY_H + 14
+DEFICIT_LABEL_Y = BRANCH_Y + 34
+DEFICIT_BOX_Y = DEFICIT_LABEL_Y + 10
+arrow(f"M{NS_CX},{DAILY_Y + DAILY_H} L{NS_CX},{BRANCH_Y} L200,{BRANCH_Y} L200,{DEFICIT_LABEL_Y - 20}", 1.4)
+
+ORANGE = ("#FCE9D8", "#C2703D")
 parts.append(
-    '<rect x="20" y="600" width="960" height="440" rx="18" fill="#FAFBFC" '
-    'stroke="#94A3B8" stroke-width="2" stroke-dasharray="7 5"/>'
+    text(
+        40,
+        DEFICIT_LABEL_Y,
+        "Deficit day (net supply &lt; 0) &#8212; draw down, in priority order:",
+        FS_HEAD,
+        max_w=920,
+        fill="#8A4A22",
+        anchor="start",
+        bold=True,
+    )
 )
-parts.append('<text x="44" y="632" font-size="17" font-weight="700" fill="#1F2A44">Step 3 &#183; Daily dispatch simulation &amp; cost feedback</text>')
+deficit = [
+    ([("Interconnector", FS_MAIN), ("imports", FS_MAIN)], ORANGE),
+    ([("Medium-term", FS_MAIN), ("storage discharge", FS_MAIN)], ORANGE),
+    ([("Gas generation +", FS_MAIN), ("carbon capture", FS_MAIN)], ORANGE),
+    ([("Hydrogen storage", FS_MAIN), ("discharge", FS_MAIN), ("(H&#8322; variant)", FS_SUB)], ORANGE),
+    ([("Still short &#8594;", FS_MAIN), ("day infeasible", FS_MAIN)], ("#F6D9CE", "#8A4A22")),
+]
+for i, (lines, (fill, stroke)) in enumerate(deficit):
+    labelled_box(chain_xs[i], DEFICIT_BOX_Y, CHAIN_W, CHAIN_H, lines, fill, stroke, dash=i == 4)
+DB_MID = DEFICIT_BOX_Y + CHAIN_H / 2
+for x in chain_xs[1:]:
+    arrow(f"M{x - CHAIN_GAP},{DB_MID} L{x - 4},{DB_MID}", 1.4)
 
-parts.append(f'<path d="M{NS_CX},{NS_Y+NS_H} L{NS_CX},650" fill="none" stroke="#1F2A44" stroke-width="1.6" marker-end="url(#arrow)"/>')
-parts.append(f'<rect x="{NS_CX-110}" y="650" width="220" height="46" rx="8" fill="#FCE9D8" stroke="#C2703D" stroke-width="1.6"/>')
-parts.append(f'<text x="{NS_CX}" y="678" font-size="11.5" fill="#1F2A44" text-anchor="middle">Daily net supply, one day at a time</text>')
-
-parts.append(f'<path d="M{NS_CX},696 L{NS_CX},712 L200,712 L200,724" fill="none" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)"/>')
-parts.append(f'<path d="M{NS_CX},712 L{NS_CX},796" fill="none" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)"/>')
-
-parts.append('<text x="60" y="748" font-size="12.5" font-weight="700" fill="#8A4A22">Deficit day (net supply &lt; 0) &#8212; draw down, in priority order:</text>')
+SURPLUS_LABEL_Y = DEFICIT_BOX_Y + CHAIN_H + 30
+SURPLUS_BOX_Y = SURPLUS_LABEL_Y + 10
 parts.append(
-    """<g font-size="10.8" fill="#1F2A44">
-    <rect x="60" y="760" width="150" height="46" rx="8" fill="#FCE9D8" stroke="#C2703D" stroke-width="1.4"/>
-    <text x="135" y="787" text-anchor="middle">Interconnector imports</text>
-
-    <rect x="232" y="760" width="150" height="46" rx="8" fill="#FCE9D8" stroke="#C2703D" stroke-width="1.4"/>
-    <text x="307" y="780" text-anchor="middle">Medium-term</text>
-    <text x="307" y="793" text-anchor="middle">storage discharge</text>
-
-    <rect x="404" y="760" width="150" height="46" rx="8" fill="#FCE9D8" stroke="#C2703D" stroke-width="1.4"/>
-    <text x="479" y="780" text-anchor="middle">Gas generation +</text>
-    <text x="479" y="793" text-anchor="middle">carbon capture</text>
-
-    <rect x="576" y="760" width="150" height="46" rx="8" fill="#FCE9D8" stroke="#C2703D" stroke-width="1.4"/>
-    <text x="651" y="780" text-anchor="middle">Hydrogen storage</text>
-    <text x="651" y="793" text-anchor="middle">discharge (H&#8322; variant)</text>
-
-    <rect x="748" y="760" width="152" height="46" rx="8" fill="#F6D9CE" stroke="#8A4A22" stroke-width="1.4" stroke-dasharray="4 3"/>
-    <text x="824" y="780" text-anchor="middle">Still short &#8594;</text>
-    <text x="824" y="793" text-anchor="middle">day infeasible</text>
-  </g>
-  <path d="M210,783 L228,783" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
-  <path d="M382,783 L400,783" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
-  <path d="M554,783 L572,783" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
-  <path d="M726,783 L744,783" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>"""
+    text(
+        40,
+        SURPLUS_LABEL_Y,
+        "Surplus day (net supply &gt; 0) &#8212; absorb, in priority order:",
+        FS_HEAD,
+        max_w=920,
+        fill="#8A4A22",
+        anchor="start",
+        bold=True,
+    )
 )
+surplus = [
+    ([("Medium-term", FS_MAIN), ("storage charge", FS_MAIN)], ORANGE),
+    ([("Electrolysis /", FS_MAIN), ("H&#8322; storage", FS_MAIN), ("(H&#8322; variant)", FS_SUB)], ORANGE),
+    ([("Electrochemical", FS_MAIN), ("DAC", FS_MAIN)], ("#FDF0B8", "#A67F0A")),
+    ([("Curtailment", FS_MAIN), ("(remainder)", FS_MAIN)], ORANGE),
+]
+for i, (lines, (fill, stroke)) in enumerate(surplus):
+    labelled_box(chain_xs[i], SURPLUS_BOX_Y, CHAIN_W, CHAIN_H, lines, fill, stroke)
+SB_MID = SURPLUS_BOX_Y + CHAIN_H / 2
+for x in chain_xs[1:4]:
+    arrow(f"M{x - CHAIN_GAP},{SB_MID} L{x - 4},{SB_MID}", 1.4)
 
-parts.append('<text x="60" y="838" font-size="12.5" font-weight="700" fill="#8A4A22">Surplus day (net supply &gt; 0) &#8212; absorb, in priority order:</text>')
+COST_X, COST_W, COST_H = 200, 660, 58
+COST_CX = COST_X + COST_W / 2
+COST_BOX_Y = SURPLUS_BOX_Y + CHAIN_H + 38
+parts.append(f'<rect x="{COST_X}" y="{COST_BOX_Y}" width="{COST_W}" height="{COST_H}" rx="10" fill="#E2EFE3" stroke="#4E8B5C" stroke-width="1.8"/>')
+parts.append(text(COST_CX, COST_BOX_Y + 24, "Cost accounting", FS_HEAD, max_w=COST_W - 12, bold=True))
 parts.append(
-    """<g font-size="10.8" fill="#1F2A44">
-    <rect x="60" y="850" width="150" height="46" rx="8" fill="#FCE9D8" stroke="#C2703D" stroke-width="1.4"/>
-    <text x="135" y="870" text-anchor="middle">Medium-term</text>
-    <text x="135" y="883" text-anchor="middle">storage charge</text>
-
-    <rect x="232" y="850" width="150" height="46" rx="8" fill="#FCE9D8" stroke="#C2703D" stroke-width="1.4"/>
-    <text x="307" y="870" text-anchor="middle">Electrolysis / H&#8322;</text>
-    <text x="307" y="883" text-anchor="middle">storage (H&#8322; variant)</text>
-
-    <rect x="404" y="850" width="150" height="46" rx="8" fill="#FCE9D8" stroke="#C2703D" stroke-width="1.4"/>
-    <text x="479" y="877" text-anchor="middle">Direct air capture</text>
-
-    <rect x="576" y="850" width="150" height="46" rx="8" fill="#FCE9D8" stroke="#C2703D" stroke-width="1.4"/>
-    <text x="651" y="877" text-anchor="middle">Curtailment (remainder)</text>
-  </g>
-  <path d="M210,873 L228,873" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
-  <path d="M382,873 L400,873" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
-  <path d="M554,873 L572,873" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>"""
+    text(
+        COST_CX,
+        COST_BOX_Y + 46,
+        "curtailment-adjusted cost + technology LCOE &#8594; total system cost, DAC &#163;/tCO&#8322;",
+        FS_SUB,
+        max_w=COST_W - 12,
+    )
 )
 
-parts.append('<rect x="330" y="960" width="400" height="62" rx="10" fill="#E2EFE3" stroke="#4E8B5C" stroke-width="1.8"/>')
-parts.append('<text x="530" y="985" font-size="12" font-weight="700" fill="#1F2A44" text-anchor="middle">Cost accounting</text>')
-parts.append('<text x="530" y="1002" font-size="10.8" fill="#1F2A44" text-anchor="middle">curtailment-adjusted cost + technology LCOE &#8594; total system cost, DAC &#163;/tCO&#8322;</text>')
+CURT_CX = chain_xs[3] + CHAIN_W / 2
+FB_Y = COST_BOX_Y - 18
+arrow(
+    f"M{CURT_CX},{SURPLUS_BOX_Y + CHAIN_H} L{CURT_CX},{FB_Y} L{COST_CX},{FB_Y} L{COST_CX},{COST_BOX_Y}",
+    1.8,
+    "#8A4A22",
+    "arrowMuted",
+    'stroke-dasharray="6 4" ',
+)
+# label sits just right of the corner, clear of the dashed line (which runs leftwards)
+parts.append(text(CURT_CX + 10, FB_Y + 6, "curtailment feedback", FS_SUB, max_w=960 - CURT_CX - 10, fill="#8A4A22", anchor="start", italic=True))
 
-parts.append('<path d="M651,896 L651,930 L530,930 L530,958" fill="none" stroke="#8A4A22" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#arrowMuted)"/>')
-parts.append('<rect x="560" y="915" width="110" height="20" fill="#FAFBFC"/>')
-parts.append('<text x="615" y="930" font-size="10.5" fill="#8A4A22" text-anchor="middle" font-style="italic">curtailment feedback</text>')
+STEP3_H = COST_BOX_Y + COST_H + 16 - STEP3_Y
+parts[step3_frame_idx] = (
+    f'<rect x="20" y="{STEP3_Y}" width="960" height="{STEP3_H}" rx="18" fill="#FAFBFC" stroke="#94A3B8" stroke-width="2" stroke-dasharray="7 5"/>'
+)
+parts[step3_frame_idx + 1] = text(
+    40, STEP3_Y + 31, "Step 3 &#183; Daily dispatch simulation &amp; cost feedback", FS_STEP, max_w=920, anchor="start", bold=True
+)
 
-parts.append('<path d="M985,905 L985,991 L732,991" fill="none" stroke="#4E8B5C" stroke-width="1.6" marker-end="url(#arrow)"/>')
+# cost assumptions (Step 1 cylinder) routed down the right margin into cost accounting
+COST_MID = COST_BOX_Y + COST_H / 2
+ROUTE_Y = STEP1_Y + STEP1_H + 10
+arrow(f"M{CYL_R},{CYL_BOTTOM} L{CYL_R},{ROUTE_Y} L987,{ROUTE_Y} L987,{COST_MID} L{COST_X + COST_W + 6},{COST_MID}", color="#4E8B5C")
+parts.append(text(972, STEP2_Y + 26, "cost assumptions", FS_SUB, max_w=200, fill=MUTED, anchor="end"))
 
 # ============================================================
 # STEP 4 : OUTPUTS & SCENARIO OPTIMISATION
@@ -252,52 +352,50 @@ parts.append('<path d="M985,905 L985,991 L732,991" fill="none" stroke="#4E8B5C" 
 # (annual metrics / scenario search / teaching app) as a plain bullet list on
 # the right - no thumbnails, since those don't need a chart to make their point.
 # ============================================================
-STEP4_Y = 1075
-STEP4_H = 330
-parts.append(
-    f'<rect x="20" y="{STEP4_Y}" width="960" height="{STEP4_H}" rx="18" fill="#FAFBFC" '
-    'stroke="#94A3B8" stroke-width="2" stroke-dasharray="7 5"/>'
-)
-parts.append(f'<text x="44" y="{STEP4_Y+32}" font-size="17" font-weight="700" fill="#1F2A44">Step 4 &#183; Outputs &amp; scenario optimisation</text>')
+STEP4_Y = STEP3_Y + STEP3_H + 20
+STEP4_H = VIEWBOX_H - 20 - STEP4_Y
+step_frame(STEP4_Y, STEP4_H, "Step 4 &#183; Outputs &amp; scenario optimisation")
 
 # ---- left: enlarged Time series chart ----
-TS_X, TS_Y, TS_W, TS_H = 50, STEP4_Y + 53, 560, STEP4_H - 78
+TS_X, TS_Y, TS_W = 40, STEP4_Y + 44, 530
+TS_H = STEP4_H - 58
 parts.append(f'<rect x="{TS_X}" y="{TS_Y}" width="{TS_W}" height="{TS_H}" rx="10" fill="#EDE3F0" stroke="#7C5A9E" stroke-width="1.6"/>')
-parts.append(f'<text x="{TS_X+TS_W/2}" y="{TS_Y+22}" font-size="13" font-weight="700" fill="#1F2A44" text-anchor="middle">Time series</text>')
+parts.append(text(TS_X + TS_W / 2, TS_Y + 23, "Time series", FS_HEAD, max_w=TS_W - 12, bold=True))
 TS_IMG_H = TS_H - 60
-parts.append(f'<rect x="{TS_X+12}" y="{TS_Y+30}" width="{TS_W-24}" height="{TS_IMG_H}" fill="#FFFFFF" stroke="#D9CBE3" stroke-width="1"/>')
-parts.append(img_tag("timeseries", TS_X + 12, TS_Y + 30, TS_W - 24, TS_IMG_H))
-parts.append(f'<text x="{TS_X+TS_W/2}" y="{TS_Y+30+TS_IMG_H+20}" font-size="10.5" fill="#4A5568" text-anchor="middle">storage levels &amp; energy flows across simulated years</text>')
+parts.append(f'<rect x="{TS_X + 10}" y="{TS_Y + 31}" width="{TS_W - 20}" height="{TS_IMG_H}" fill="#FFFFFF" stroke="#D9CBE3" stroke-width="1"/>')
+parts.append(img_tag("timeseries", TS_X + 10, TS_Y + 31, TS_W - 20, TS_IMG_H))
+parts.append(text(TS_X + TS_W / 2, TS_Y + TS_H - 10, "storage levels &amp; energy flows across simulated years", FS_SUB, max_w=TS_W - 12, fill=MUTED))
 
 # ---- right: bullet-point summary of the other outputs (no charts) ----
-BL_X, BL_Y, BL_W = 630, TS_Y, 350
+BL_X = TS_X + TS_W + 22
+BL_Y, BL_W = TS_Y, 960 - BL_X
 parts.append(f'<rect x="{BL_X}" y="{BL_Y}" width="{BL_W}" height="{TS_H}" rx="10" fill="#EDE3F0" stroke="#7C5A9E" stroke-width="1.6"/>')
 
+# each bullet is a tuple of lines; continuation lines are indented under the text
 groups = [
-    ("Annual metrics", ["net CO&#8322; removed", "capacity factor", "system cost (&#163;/MWh, &#163;/tCO&#8322;)"]),
-    ("Scenario search", ["bisection search over capacity mix", "re-runs Steps 2&#8211;3 at each trial"]),
-    ("Teaching app", ["interactive Streamlit scenario exploration"]),
+    ("Annual metrics", [("net CO&#8322; removed",), ("capacity factor",), ("system cost (&#163;/MWh, &#163;/tCO&#8322;)",)]),
+    ("Scenario search", [("bisection search over capacity mix",), ("re-runs Steps 2&#8211;3 at each trial",)]),
+    ("Teaching app", [("interactive Streamlit scenario explorer",)]),
 ]
-ty = BL_Y + 30
-tx = BL_X + 22
+ty = BL_Y + 27
+tx = BL_X + 16
 for title, bullets in groups:
-    parts.append(f'<text x="{tx}" y="{ty}" font-size="13" font-weight="700" fill="#1F2A44">{title}</text>')
-    ty += 20
-    for b in bullets:
-        parts.append(f'<text x="{tx+6}" y="{ty}" font-size="11.3" fill="#4A5568">&#8226; {b}</text>')
-        ty += 18
-    ty += 14
+    parts.append(text(tx, ty, title, FS_HEAD, max_w=BL_W - 24, anchor="start", bold=True))
+    ty += 22
+    for lines in bullets:
+        for j, line in enumerate(lines):
+            s = f"&#8226; {line}" if j == 0 else line
+            parts.append(text(tx + (4 if j == 0 else 15), ty, s, FS_SUB, max_w=BL_W - 24, fill=MUTED, anchor="start"))
+            ty += 20
+    ty += 8
+assert ty - 10 < BL_Y + TS_H, f"bullet list overflows its box ({ty - 10:.0f} > {BL_Y + TS_H:.0f})"
 
-parts.append(f'<path d="M{TS_X+TS_W},{TS_Y+TS_H/2} L{BL_X-8},{TS_Y+TS_H/2}" fill="none" stroke="#1F2A44" stroke-width="1.4" marker-end="url(#arrow)"/>')
-
-parts.append(
-    f'<text x="20" y="{VIEWBOX_H-22}" font-size="11.5" fill="#4A5568">Solid arrows: forward data flow within one simulation run.  '
-    "Dashed brown: cost feedback from realised curtailment.</text>"
-)
+arrow(f"M{TS_X + TS_W},{TS_Y + TS_H / 2} L{BL_X - 6},{TS_Y + TS_H / 2}", 1.4)
 
 parts.append("</svg>")
 
 svg = "\n".join(parts)
-with open(OUT_PATH, "w", encoding="utf-8") as f:
+with pathlib.Path(OUT_PATH).open("w", encoding="utf-8") as f:
     f.write(svg)
 print("wrote", OUT_PATH, len(svg), "bytes")
+print(f"step heights: 1={STEP1_H} 2={STEP2_H} 3={STEP3_H} 4={STEP4_H}")

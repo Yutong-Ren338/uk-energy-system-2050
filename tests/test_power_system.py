@@ -200,6 +200,11 @@ def test_analyze_simulation_results_structure(power_system_model: PowerSystem, s
         "annual_gas_dac_capture",
         "annual_gas_emissions",
         "annual_net_capture",
+        "edac_nameplate_annual_removals",
+        "edac_total_capex",
+        "edac_annualised_capex",
+        "edac_fixed_opex",
+        "edac_lcor",
         "annual_dac_total_cost",
         "dac_cost_per_mwh",
     }
@@ -219,6 +224,11 @@ def test_analyze_simulation_results_structure(power_system_model: PowerSystem, s
     assert isinstance(results["annual_gas_dac_capture"], Quantity)
     assert isinstance(results["annual_gas_emissions"], Quantity)
     assert isinstance(results["annual_net_capture"], Quantity)
+    assert isinstance(results["edac_nameplate_annual_removals"], Quantity)
+    assert isinstance(results["edac_total_capex"], Quantity)
+    assert isinstance(results["edac_annualised_capex"], Quantity)
+    assert isinstance(results["edac_fixed_opex"], Quantity)
+    assert isinstance(results["edac_lcor"], Quantity)
     assert isinstance(results["annual_dac_total_cost"], Quantity)
     assert isinstance(results["dac_cost_per_mwh"], Quantity)
 

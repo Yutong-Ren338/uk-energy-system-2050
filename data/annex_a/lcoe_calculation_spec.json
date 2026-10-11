@@ -1,0 +1,141 @@
+{
+  "_meta": {
+    "title": "DESNZ LCOE Calculation Specification",
+    "source": "Annex B - Example LCOE Calculator 2025 (Onshore Wind LCOE sheet), DESNZ Electricity Generation Costs 2025",
+    "purpose": "Machine-readable specification for implementing the exact LCOE calculation logic. Pair with annex_a_technical_assumptions.json for input parameters and annex_a_lcoe_results.json for validation targets.",
+    "currency_base_year": "2024 real GBP prices",
+    "note": "All spreadsheet cell references are from the Onshore Wind LCOE sheet in Annex B and are provided for traceability only; they are not required for re-implementation."
+  },
+
+  "inputs": {
+    "net_power_output_mw": {"symbol": "P_net", "unit": "MW", "source": "Annex A: Reference plant size"},
+    "hurdle_rate": {"symbol": "r", "unit": "fraction (e.g. 0.076)", "source": "Annex A: Hurdle Rate (Low/Medium/High) - use Medium unless otherwise specified"},
+    "gross_load_factor": {"symbol": "LF_t", "unit": "fraction", "note": "First value applies to year 1 of operation; can vary by year if a trajectory is given, otherwise constant", "source": "Annex A: Average load factor (net load factor)"},
+    "availability": {"symbol": "A_t", "unit": "fraction", "note": "Defaults to 1.0 (100%) unless a separate availability trajectory is specified; net load factor in Annex A already nets out availability for most renewables", "source": "Annex A / calculator hard-coded default"},
+    "hours_per_year": {"symbol": "H", "unit": "hours", "value": 8760},
+    "operating_lifetime_years": {"unit": "years", "source": "Annex A: Operating lifetime"},
+    "pre_development_period_years": {"source": "Annex A: Pre-development period (Low/Medium/High)"},
+    "pre_development_phasing_pct": {"unit": "fraction per year, sums to 1.0 over the pre-development period", "source": "Annex A: Pre-development phasing (Year 1, Year 2, ... Year 6+)"},
+    "pre_licensing_cost_gbp_per_kw": {"source": "Annex A: Pre-development Cost (Low/Medium/High) - treated as combining pre-licensing + regulatory in the calculator; can be split if source data allows"},
+    "regulatory_licensing_cost_gbp_per_kw": {"note": "In the example calculator this was 0 for onshore wind; check Annex A source notes per technology", "source": "Annex A"},
+    "construction_period_years": {"source": "Annex A: Construction period (Low/Medium/High)"},
+    "construction_phasing_pct": {"unit": "fraction per year, sums to 1.0 over the construction period", "source": "Annex A: Construction phasing (Year 1 ... Year 6+)"},
+    "capital_cost_gbp_per_kw": {"source": "Annex A: Construction Cost (Low/Medium/High)"},
+    "infrastructure_cost_gbp_thousand": {"unit": "£'000, total (not per kW)", "note": "N/A for offshore wind per Annex A general note 5 - offshore wind connection costs are excluded from capex and not captured elsewhere in this dataset", "source": "Annex A: Infrastructure (Low/Medium/High)"},
+    "fixed_om_gbp_per_mw": {"source": "Annex A: Fixed O&M"},
+    "insurance_gbp_per_mw": {"source": "Annex A: Insurance"},
+    "connection_uos_gbp_per_mw": {"source": "Annex A: Connection and use of system charges"},
+    "variable_om_gbp_per_mwh": {"source": "Annex A: Variable O&M"},
+    "fuel_price_gbp_per_mwh": {"note": "0 for wind/solar", "source": "Not in this Annex A table for renewables; relevant for gas/hydrogen technologies"},
+    "net_fuel_efficiency": {"symbol": "eta_net", "unit": "fraction", "note": "0 for wind/solar (no fuel)", "source": "Annex A: Average fuel efficiency"},
+    "heat_revenue_price_gbp_per_mwh": {"note": "Negative value; CHP technologies only, not applicable to wind/solar/CCGT-without-CHP", "source": "Not present in this dataset for renewables"},
+    "decommissioning_cost_gbp_thousand": {"note": "Present in Annex A (Low/Medium/High) but excluded from the D16 master total in the example calculator; shown separately in Annex A results tables as 'Decommissioning and waste'", "source": "Annex A: Decommissioning Cost (Low/Medium/High)"}
+  },
+
+  "calculation_steps": [
+    {
+      "step": 1,
+      "name": "discount_factor",
+      "formula": "discount_factor[1] = 1; discount_factor[t] = discount_factor[t-1] / (1 + hurdle_rate)  for t = 2..N",
+      "outputs": ["discount_factor[t] for each year t across the full project timeline (pre-development + construction + operation)"]
+    },
+    {
+      "step": 2,
+      "name": "generation",
+      "formula": "generation[t] = net_power_output_mw * gross_load_factor[t] * availability[t] * hours_per_year",
+      "applies_to_years": "operation years only (pre-development and construction years have zero generation)",
+      "outputs": ["generation[t] in MWh"]
+    },
+    {
+      "step": 3,
+      "name": "discounted_generation",
+      "formula": "discounted_generation[t] = generation[t] * discount_factor[t]",
+      "aggregate": "total_discounted_generation_mwh = sum(discounted_generation[t] for all t)"
+    },
+    {
+      "step": 4,
+      "name": "pre_development_cost",
+      "formula_total_spend": "total_pre_dev_spend_gbp_m = (pre_licensing_cost_gbp_per_kw + regulatory_licensing_cost_gbp_per_kw) * net_power_output_mw * 1000 * 1e-6",
+      "formula_annual": "pre_dev_cost[t] = total_pre_dev_spend_gbp_m * pre_development_phasing_pct[t]   for t within the pre-development period",
+      "formula_discounted": "discounted_pre_dev_cost[t] = pre_dev_cost[t] * discount_factor[t]",
+      "aggregate": "total_discounted_pre_dev_gbp_m = sum(discounted_pre_dev_cost[t] for all t)",
+      "unit_cost_output": "pre_dev_cost_per_mwh = total_discounted_pre_dev_gbp_m * 1e6 / total_discounted_generation_mwh"
+    },
+    {
+      "step": 5,
+      "name": "construction_cost",
+      "formula_total_capital": "total_capital_spend_gbp_m = capital_cost_gbp_per_kw * net_power_output_mw * 1000 * 1e-6",
+      "formula_infrastructure": "infrastructure_spend_gbp_m = infrastructure_cost_gbp_thousand / 1000",
+      "note_offshore_wind": "For offshore wind, infrastructure_cost is typically N/A/excluded per Annex A note 5 - do not add a null/N/A value; treat as 0 or omit per source technology's documented treatment",
+      "formula_annual": "construction_cost[t] = (total_capital_spend_gbp_m + infrastructure_spend_gbp_m) * construction_phasing_pct[t]   for t within the construction period",
+      "formula_discounted": "discounted_construction_cost[t] = construction_cost[t] * discount_factor[t]",
+      "aggregate": "total_discounted_construction_gbp_m = sum(discounted_construction_cost[t] for all t)",
+      "unit_cost_output": "construction_cost_per_mwh = total_discounted_construction_gbp_m * 1e6 / total_discounted_generation_mwh"
+    },
+    {
+      "step": 6,
+      "name": "fixed_om_cost",
+      "formula_annual": "fixed_om[t] = fixed_om_gbp_per_mw * net_power_output_mw * 1e-6; insurance[t] = insurance_gbp_per_mw * net_power_output_mw * 1e-6; connection_uos[t] = connection_uos_gbp_per_mw * net_power_output_mw * 1e-6; total_fixed_om[t] = fixed_om[t] + insurance[t] + connection_uos[t]",
+      "applies_to_years": "operation years only",
+      "formula_discounted": "discounted_fixed_om[t] = total_fixed_om[t] * discount_factor[t]",
+      "aggregate": "total_discounted_fixed_om_gbp_m = sum(discounted_fixed_om[t] for all t)",
+      "unit_cost_output": "fixed_om_per_mwh = total_discounted_fixed_om_gbp_m * 1e6 / total_discounted_generation_mwh"
+    },
+    {
+      "step": 7,
+      "name": "variable_om_cost",
+      "formula_annual": "variable_om_cost[t] = variable_om_gbp_per_mwh * generation[t] * 1e-6",
+      "applies_to_years": "operation years only",
+      "formula_discounted": "discounted_variable_om[t] = variable_om_cost[t] * discount_factor[t]",
+      "aggregate": "total_discounted_variable_om_gbp_m = sum(discounted_variable_om[t] for all t)",
+      "unit_cost_output": "variable_om_per_mwh = total_discounted_variable_om_gbp_m * 1e6 / total_discounted_generation_mwh"
+    },
+    {
+      "step": 8,
+      "name": "fuel_cost",
+      "formula": "fuel_consumption[t] = generation[t] / net_fuel_efficiency; fuel_cost[t] = fuel_price_gbp_per_mwh * fuel_consumption[t] * 1e-6",
+      "note": "Set to 0 for wind/solar (net_fuel_efficiency = 0, no fuel consumed); guard against division by zero in implementation",
+      "applies_to_years": "operation years only",
+      "formula_discounted": "discounted_fuel_cost[t] = fuel_cost[t] * discount_factor[t]",
+      "aggregate": "total_discounted_fuel_gbp_m = sum(discounted_fuel_cost[t] for all t)",
+      "unit_cost_output": "fuel_cost_per_mwh = total_discounted_fuel_gbp_m * 1e6 / total_discounted_generation_mwh"
+    },
+    {
+      "step": 9,
+      "name": "heat_revenue",
+      "formula": "heat_revenue[t] = heat_revenue_price_gbp_per_mwh * generation[t] * 1e-6",
+      "note": "Only applicable to CHP technologies; not applicable to wind, solar, or non-CHP gas plants. heat_revenue_price is negative, so this term reduces total LCOE when present. Lasts for 20 years (assumed heat offtaker contract length), not full operating lifetime.",
+      "formula_discounted": "discounted_heat_revenue[t] = heat_revenue[t] * discount_factor[t]",
+      "aggregate": "total_discounted_heat_revenue_gbp_m = sum(discounted_heat_revenue[t] for all t)",
+      "unit_cost_output": "heat_revenue_per_mwh = total_discounted_heat_revenue_gbp_m * 1e6 / total_discounted_generation_mwh"
+    },
+    {
+      "step": 10,
+      "name": "total_lcoe",
+      "formula": "lcoe_gbp_per_mwh = pre_dev_cost_per_mwh + construction_cost_per_mwh + fixed_om_per_mwh + variable_om_per_mwh + fuel_cost_per_mwh + heat_revenue_per_mwh",
+      "note_ccus": "For CCUS technologies, add: carbon_cost_per_mwh + co2_transport_storage_cost_per_mwh (same discounted-cost-over-discounted-generation pattern; not detailed here as wind/solar have neither)",
+      "note_decommissioning": "Decommissioning cost is present in Annex A input data and in Annex A results tables as a separate line item ('Decommissioning and waste'), but is NOT included in the D16 master total formula in the example Annex B calculator. Confirm treatment against the specific technology's Annex A results row before deciding whether to include it in a downstream model."
+    }
+  ],
+
+  "validation_targets": {
+    "description": "Use annex_a_lcoe_results.json as the source of truth to validate a re-implementation. Match on [technology][commissioning_year]['Total13'] (or equivalent 'Total' key) against your computed lcoe_gbp_per_mwh.",
+    "known_check_value": {
+      "technology": "Fixed Offshore Wind",
+      "commissioning_year": "2050",
+      "expected_total_gbp_per_mwh": 89,
+      "breakdown": {
+        "pre_development_costs": 5,
+        "construction_costs": 52,
+        "fixed_om_costs": 31,
+        "variable_om_costs": 0,
+        "fuel_costs": 0
+      }
+    }
+  },
+
+  "companion_files": {
+    "annex_a_technical_assumptions.json": "Raw input parameters for all 30 technologies x 5 commissioning years (2030/2035/2040/2045/2050), keyed by technology name then year.",
+    "annex_a_lcoe_results.json": "Official DESNZ-computed LCOE results (£/MWh, broken down by cost category) for all technologies x years, for validation."
+  }
+}

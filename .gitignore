@@ -11,8 +11,23 @@ __pycache__/
 *.txt
 *.text*
 .venv/
+.venv-web/
 .pytest_cache/
 .vscode/
+
+# Local agent/editor state
+.agents/
+.claude/
+
+# Logs, temporary reports, and scratch files
+*.log
+*.a64rpt
+tmp/
+
+# Generated analysis outputs
+output/
+nbs/output/
+*.pdf
 
 # Teaching site (Streamlit) deployment data allow-list
 !requirements.txt

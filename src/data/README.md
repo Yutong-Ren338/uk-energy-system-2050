@@ -24,6 +24,8 @@ uv run src/data/scrape_gas_demand.py
 | `data/ERA5_2021/` | Legacy ERA5 renewable/weather dataset for UK and peer-country comparisons | ERA5 2021 | [Dataset](https://doi.org/10.17864/1947.000321) |
 | `data/ERA5_2024/solar_capacity_factor/` and `data/ERA5_2024/wind_capacity_factor/` | New ERA5-based country-level solar/onshore/offshore capacity factors used for UK runs and interconnector-country import availability | ERA5 2024 | [Dataset](https://doi.org/10.5281/zenodo.12634069) |
 | `data/UK_gas_demand.csv` and `data/UK_gas_demand_processed.csv` | Raw and processed UK gas demand for heat seasonality work | NTS / repo scrape workflow | [Website](https://data.nationalgas.com/) |
+| `data/annex_a/annex_a_technical_assumptions.json` | Per-technology, per-commissioning-year cost/technical inputs used by `src/lcoe.py` to compute `Renewables.LCOE` | DESNZ Electricity Generation Costs 2025, Annex A | [Report](https://www.gov.uk/government/publications/electricity-generation-costs-2025) |
+| `data/annex_a/annex_a_lcoe_results.json` | DESNZ's own computed LCOE results, used only to validate `src/lcoe.py` in `tests/test_lcoe.py` | DESNZ Electricity Generation Costs 2025, Annex B (Example LCOE Calculator) | [Report](https://www.gov.uk/government/publications/electricity-generation-costs-2025) |
 
 ### How to obtain the datasets
 

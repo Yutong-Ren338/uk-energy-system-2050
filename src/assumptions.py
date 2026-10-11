@@ -1,5 +1,7 @@
+import math
 from typing import ClassVar
 
+from src.lcoe import renewables_2050_lcoe
 from src.units import Units as U
 from src.units import ureg
 from src.utils import annualised_cost, convert_energy_cost
@@ -140,11 +142,35 @@ class Renewables:
         OnshoreWind = 0.293  # 45% according to Department for Net Zero
 
     class LCOE:
-        """Levelized Cost of Energy (Source: BEIS, 2023)."""
+        """Levelized Cost of Energy.
 
-        Solar = 30.0 * U.GBP / U.MWh  # CB7 (Table 7.5.1): 27 £/MWh
-        OffshoreWind = 41.0 * U.GBP / U.MWh  # CB7 (Table 7.5.1): 31 £/MWh
-        OnshoreWind = 36.0 * U.GBP / U.MWh
+        Source: DESNZ Electricity Generation Costs 2025 (Annex A/B methodology),
+        computed via src.lcoe for 2050 commissioning, Medium hurdle-rate scenario.
+        """
+
+        Solar = renewables_2050_lcoe("Large Scale Solar PV")["total"]
+        OffshoreWind = renewables_2050_lcoe("Fixed Offshore Wind")["total"]
+        OnshoreWind = renewables_2050_lcoe("Onshore Wind")["total"]
+
+    # LCOE recomputed using this model's own capacity factors (CapacityFactors,
+    # derived from renewables.ninja hourly data) instead of DESNZ Annex A's
+    # reference-plant load factor. LCOE.* stays on the DESNZ Annex A load
+    # factor so it remains checkable against DESNZ's own published figures
+    # (see tests/test_lcoe.py); ModelImpliedLCOE.* shows what the £/MWh cost
+    # looks like if the plant instead achieves this model's simulated average
+    # utilisation, which differs from the Annex A assumption (e.g. offshore
+    # wind: 0.5 in Annex A vs CapacityFactors.OffshoreWind here). Built via
+    # type() rather than a nested `class` statement because a nested class
+    # body can't see names (like CapacityFactors) from its enclosing class body.
+    ModelImpliedLCOE = type(
+        "ModelImpliedLCOE",
+        (),
+        {
+            "Solar": renewables_2050_lcoe("Large Scale Solar PV", load_factor=CapacityFactors.Solar)["total"],
+            "OffshoreWind": renewables_2050_lcoe("Fixed Offshore Wind", load_factor=CapacityFactors.OffshoreWind)["total"],
+            "OnshoreWind": renewables_2050_lcoe("Onshore Wind", load_factor=CapacityFactors.OnshoreWind)["total"],
+        },
+    )
 
     # Calculated weighted average capacity factor across all renewable technologies
     AverageCapacityFactor = (
@@ -154,6 +180,12 @@ class Renewables:
     )
 
     AverageLCOE = LCOE.Solar * CapacityRatios.Solar + LCOE.OffshoreWind * CapacityRatios.OffshoreWind + LCOE.OnshoreWind * CapacityRatios.OnshoreWind
+
+    AverageModelImpliedLCOE = (
+        ModelImpliedLCOE.Solar * CapacityRatios.Solar
+        + ModelImpliedLCOE.OffshoreWind * CapacityRatios.OffshoreWind
+        + ModelImpliedLCOE.OnshoreWind * CapacityRatios.OnshoreWind
+    )
 
 
 # ============================================================================
@@ -288,10 +320,54 @@ class LTDAC:
 
 # E-DAC (electricity-driven DAC)
 class EDAC:
-    """Parameters for electricity-driven DAC (grid DAC)."""
+    """Economic parameters for electricity-driven DAC (E-DAC).
 
-    LCOE = 56.84 * U.GBP / U.MWh  # Levelized cost per MWh of electricity consumed
-    LCOR = 55.57 * U.GBP / U.t  # Levelized Cost of Removal (LCOR) for electricity-driven DAC, including carbon storage costs
+    The reference plant costs USD 31 million for 45.6 ktCO2/year of
+    nameplate capture capacity. Costs are converted to GBP using the common
+    project exchange-rate assumption above. A tonne in the capacity
+    denominator means one tonne/year of installed capture capability; it is
+    not an assumption that the plant actually captures that amount.
+    """
+
+    # Reference equipment CAPEX and nameplate capture capacity. Total CAPEX
+    # scales linearly with installed nameplate capacity unless a separate
+    # scale relationship is introduced in future.
+    ReferenceCapex = 31e6 / GBPToUSD * U.GBP
+    ReferenceAnnualCaptureCapacity = 45.6e3 * U.t
+    CapexPerAnnualCaptureCapacity = ReferenceCapex / ReferenceAnnualCaptureCapacity
+
+    # Fixed, non-labour OPEX is incurred on installed equipment regardless of
+    # how often it runs. It must not be multiplied by the simulated capacity
+    # factor; low utilisation instead raises LCOR by reducing its denominator.
+    FixedOpexFraction = 0.025
+
+    # CAPEX is annualised with a 20-year economic life. The central model uses
+    # 5%; 10% is retained as an explicit sensitivity case.
+    Lifetime = 20
+    CentralDiscountRate = 0.05
+    SensitivityDiscountRate = 0.10
+
+    # Learning rates are cost reductions for each doubling of cumulative
+    # E-DAC deployment, applied separately to CAPEX and fixed OPEX.
+    CapexLearningRate = 0.14
+    OpexLearningRate = 0.025
+
+    # Technology learning depends on industry-wide cumulative deployment, not
+    # the size of the single UK system being simulated.
+    ReferenceCumulativeDeployment = ReferenceAnnualCaptureCapacity
+
+    # Assumed global cumulative E-DAC/BPMED deployment by 2050. Source: team
+    # assumption, TBC (see Q_2050 note in project discussion).
+    CumulativeDeployment = 9.0e6 * U.t
+    CapexLearningExponent = math.log2(1 - CapexLearningRate)
+    OpexLearningExponent = math.log2(1 - OpexLearningRate)
+    DeploymentRatio = (CumulativeDeployment / ReferenceCumulativeDeployment).to(U.dimensionless).magnitude
+    LearnedCapexPerAnnualCaptureCapacity = CapexPerAnnualCaptureCapacity * DeploymentRatio**CapexLearningExponent
+    LearnedFixedOpexPerAnnualCaptureCapacity = CapexPerAnnualCaptureCapacity * FixedOpexFraction * DeploymentRatio**OpexLearningExponent
+
+    # Historical whole-cost proxy retained only for reproducing/comparing the
+    # old model. It is deliberately excluded from the new CAPEX + OPEX LCOR.
+    LegacyElectricityCost = 56.84 * U.GBP / U.MWh
 
 
 # https://www.sciencedirect.com/science/article/pii/S2542435118302253?fr=RR-2&ref=pdf_download&rr=9a6c2b6339f763d5

@@ -2,6 +2,7 @@ import pandas as pd
 
 import src.assumptions as A
 from src.costs import total_system_cost, yearly_cost
+from src.curtailment_lcoe import average_curtailment_adjusted_lcoe
 from src.power_system_core_no_h2 import handle_surplus_no_h2
 from src.power_system_no_h2 import PowerSystemNoH2
 from src.units import Units as U
@@ -18,15 +19,22 @@ def test_no_h2_gas_cost_uses_capacity_factor_based_yearly_cost() -> None:
     sim_df = pd.DataFrame({
         "gas_ccs_energy (TWh),RC=200GW": pd.Series([2.0, 0.0, 0.5], dtype="pint[TWh]"),
         "energy_into_medium_storage (TWh),RC=200GW": pd.Series([0.0, 0.0, 0.0], dtype="pint[TWh]"),
+        "curtailed_energy (TWh),RC=200GW": pd.Series([0.0, 0.0, 0.0], dtype="pint[TWh]"),
     })
 
     actual_cost = system.calculate_power_system_cost(sim_df)
 
+    # Zero simulated curtailment still routes through the curtailment-adjusted
+    # LCOE/capacity factor (see calculate_power_system_cost), which differs
+    # from A.Renewables.AverageLCOE/AverageCapacityFactor because it uses the
+    # live era5_2024 capacity factors rather than the Annex A reference-plant
+    # load factor.
+    curtailment_adjusted = average_curtailment_adjusted_lcoe(200 * U.GW, 0 * U.TWh, capacity_factors_source="era5_2024")
     base_cost = total_system_cost(
         energy_demand=A.EnergyDemand2050,
         renewable_capacity=200 * U.GW,
-        renewable_capacity_factor=A.Renewables.AverageCapacityFactor,
-        renewable_lcoe=A.Renewables.AverageLCOE,
+        renewable_capacity_factor=curtailment_adjusted["portfolio_average_capacity_factor"],
+        renewable_lcoe=curtailment_adjusted["portfolio_lacoe"],
         nuclear_capacity=A.Nuclear.Capacity,
         nuclear_capacity_factor=A.Nuclear.CapacityFactor,
         nuclear_lcoe=A.Nuclear.AverageLCOE,

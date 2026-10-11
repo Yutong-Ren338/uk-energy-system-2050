@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UK Energy Modelling with CO2 Removal</title>
+  <meta name="description"
+    content="A Python-based energy system model for simulating the UK's 2050 net-zero energy landscape.">
+  <style>
+    :root {
+      --accent: #0f6e3c;
+      --accent-dark: #0a4d29;
+      --text: #1b1f23;
+      --muted: #5b6570;
+      --bg: #ffffff;
+      --panel: #f6f8f7;
+      --border: #e2e6e4;
+      --max-width: 860px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+
+    header.hero {
+      background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+      color: #fff;
+      padding: 3.5rem 1.5rem 3rem;
+      text-align: center;
+    }
+
+    header.hero h1 {
+      margin: 0 0 0.5rem;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    header.hero p.tagline {
+      margin: 0 auto;
+      max-width: 620px;
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    header.hero p.byline {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    main {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    section {
+      padding: 2.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section:last-of-type {
+      border-bottom: none;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      margin: 0 0 1rem;
+      color: var(--text);
+    }
+
+    p {
+      color: var(--text);
+    }
+
+    ul.feature-list {
+      padding-left: 1.2rem;
+      margin: 0;
+    }
+
+    ul.feature-list li {
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-image {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin: 1.5rem 0 0;
+    }
+
+    .cta-wrap {
+      text-align: center;
+      padding: 2.5rem 0;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.05rem;
+      padding: 0.9rem 2rem;
+      border-radius: 8px;
+      transition: background 0.15s ease;
+    }
+
+    .cta-button:hover {
+      background: var(--accent-dark);
+    }
+
+    .cta-sub {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .people {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 0.9rem;
+    }
+
+    .people li {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1.1rem;
+    }
+
+    .people .name {
+      font-weight: 600;
+    }
+
+    .people .role {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .people a {
+      color: var(--accent-dark);
+    }
+
+    table.refs {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    table.refs td {
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    table.refs td.meta {
+      color: var(--muted);
+      white-space: nowrap;
+      padding-right: 1rem;
+      width: 1%;
+    }
+
+    table.refs a {
+      color: var(--accent-dark);
+    }
+
+    pre {
+      background: #1b1f23;
+      color: #e6edf3;
+      padding: 1rem 1.2rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.88rem;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    a {
+      color: var(--accent-dark);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1.5rem 3rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="hero">
+    <h1>UK Energy Modelling with CO2 Removal</h1>
+    <p class="tagline">A Python-based energy system model for simulating the UK's 2050 net-zero energy landscape.</p>
+    <p class="byline">UCL Department of Physics &amp; Astronomy — High Energy Physics group</p>
+  </header>
+
+  <main>
+
+    <section id="about">
+      <h2>About the model</h2>
+      <p>
+        This model simulates the UK's future energy system using hourly and daily time series data,
+        combining renewable generation, demand projections, storage, and carbon dioxide removal into a
+        single simulation framework. It is designed to explore how different technology mixes and policy
+        assumptions could meet UK electricity demand on the path to net zero.
+      </p>
+      <ul class="feature-list">
+        <li><strong>Renewable generation</strong> from wind and solar, using realistic ERA5-based capacity factors</li>
+        <li><strong>Multiple demand scenarios</strong>: naive scaling, seasonal profiles, and CCC Seventh Carbon Budget
+          projections</li>
+        <li><strong>Energy storage</strong> with configurable capacity, power and efficiency, including a hydrogen
+          storage pathway</li>
+        <li><strong>Direct Air Capture (DAC)</strong> integration for CO2 removal using excess capacity</li>
+        <li><strong>Scenario costing</strong>: system cost and energy cost calculations for modelled pathways</li>
+      </ul>
+      <img class="hero-image" src="https://github.com/user-attachments/assets/8e508380-4123-4db9-aacf-f4b38843b2ad"
+        alt="Example simulation output from the UK energy model">
+    </section>
+
+    <section class="cta-wrap" id="app" style="border-bottom: 1px solid var(--border);">
+      <h2>Try the interactive simulator</h2>
+      <p>Explore scenarios yourself in the browser — no installation required.</p>
+      <a class="cta-button" href="https://uk-energy-system-2050.streamlit.app/" target="_blank" rel="noopener">
+        Launch the UK 2050 Energy System Simulator →
+      </a>
+      <p class="cta-sub">Adjust renewable capacity, the hydrogen vs. non-hydrogen pathway, storage and DAC sizing, and
+        demand mode.</p>
+    </section>
+
+    <section id="authors">
+      <h2>Authors &amp; Contributors</h2>
+      <ul class="people">
+        <li>
+          <div class="name">Yutong Ren</div>
+          <div class="role">Current maintainer — <a href="https://github.com/Yutong-Ren338/uk-energy-system-2050"
+              target="_blank" rel="noopener">GitHub repository</a></div>
+        </li>
+        <li>
+          <div class="name">David Waters</div>
+          <div class="role">Professor of Physics, UCL Department of Physics &amp; Astronomy</div>
+        </li>
+        <li>
+          <div class="name">Sam Vanstroud</div>
+          <div class="role">Original <a href="https://github.com/samvanstroud/UK-Energy-Modelling" target="_blank"
+              rel="noopener">UK-Energy-Modelling</a> repository (2025)</div>
+        </li>
+        <li>
+          <div class="name">Maj Mis</div>
+          <div class="role">Master's thesis, <a href="https://github.com/majmis1/Energy-Transition-Modelling"
+              target="_blank" rel="noopener">Exploration of Great Britain's Optimal Energy Supply Mixture and Energy
+              Storage Scenarios Upon a Transition to Net-Zero</a> (2024)</div>
+        </li>
+        <li>
+          <div class="name">Rei Suzuki</div>
+          <div class="role">Master's thesis, <a href="https://github.com/RSuz1/UK-Energy-Model-with-CO2-Removal"
+              target="_blank" rel="noopener">Modelling the UK's 2050 Energy System with Carbon Dioxide Removal</a>
+            (2025)</div>
+        </li>
+      </ul>
+    </section>
+
+    <section id="references">
+      <h2>Key References</h2>
+      <table class="refs">
+        <tr>
+          <td class="meta">Royal Society, 2023</td>
+          <td><a
+              href="https://royalsociety.org/news-resources/projects/low-carbon-energy-programme/large-scale-electricity-storage/"
+              target="_blank" rel="noopener">Large-scale electricity storage</a></td>
+        </tr>
+        <tr>
+          <td class="meta">CCC, 2025</td>
+          <td><a href="https://www.theccc.org.uk/publication/the-seventh-carbon-budget/" target="_blank"
+              rel="noopener">The Seventh Carbon Budget</a></td>
+        </tr>
+        <tr>
+          <td class="meta">NESO, 2025</td>
+          <td><a href="https://www.neso.energy/publications/future-energy-scenarios-fes" target="_blank"
+              rel="noopener">Future Energy Scenarios (FES)</a></td>
+        </tr>
+        <tr>
+          <td class="meta">CCC, 2023</td>
+          <td><a
+              href="https://www.theccc.org.uk/publication/net-zero-power-and-hydrogen-capacity-requirements-for-flexibility-afry/"
+              target="_blank" rel="noopener">Net Zero Power and Hydrogen: Capacity Requirements for Flexibility (AFRY
+              BID3)</a></td>
+        </tr>
+        <tr>
+          <td class="meta">CCC, 2023</td>
+          <td><a href="https://www.theccc.org.uk/publication/delivering-a-reliable-decarbonised-power-system/"
+              target="_blank" rel="noopener">Delivering a reliable decarbonised power system</a></td>
+        </tr>
+      </table>
+    </section>
+
+    <section id="running">
+      <h2>Running the model</h2>
+      <p>
+        The full model runs locally as a Python package driven from Jupyter notebooks. Set up the
+        environment with <a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener">uv</a>:
+      </p>
+      <pre><code>uv venv
+# Windows:  .venv\Scripts\Activate.ps1
+# macOS/Linux:  source .venv/bin/activate
+
+uv sync
+uv run pytest   # sanity check</code></pre>
+      <p>
+        From there, the model is explored through notebooks in <code>nbs/</code> (e.g.
+        <code>UK Energy Model Final.ipynb</code>), which import the core <code>src/</code> package.
+        To run the interactive teaching app locally instead:
+      </p>
+      <pre><code>uv run streamlit run teaching_site/app.py</code></pre>
+      <p>
+        Full setup and documentation are in the
+        <a href="https://github.com/Yutong-Ren338/uk-energy-system-2050" target="_blank" rel="noopener">GitHub
+          repository README</a>.
+      </p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p><a href="https://github.com/Yutong-Ren338/uk-energy-system-2050" target="_blank" rel="noopener">View source on
+        GitHub</a></p>
+  </footer>
+
+</body>
+
+</html>

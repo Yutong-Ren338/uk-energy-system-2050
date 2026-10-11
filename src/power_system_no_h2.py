@@ -7,7 +7,8 @@ from matplotlib import gridspec
 from pint import Quantity
 
 import src.assumptions as A
-from src.costs import energy_cost, total_system_cost, yearly_cost
+from src.costs import edac_equipment_costs, energy_cost, total_system_cost, yearly_cost
+from src.curtailment_lcoe import average_curtailment_adjusted_lcoe
 from src.data.renewable_capacity_factors import CapacityFactorSource
 from src.power_system_core_no_h2 import SimulationParameters, simulate_power_system_core_no_h2
 from src.supply_model import get_available_imports
@@ -59,6 +60,7 @@ class PowerSystemNoH2:
             assert medium_storage_power == 0, "If medium storage capacity is zero, power must also be zero"
 
         self.renewable_capacity = renewable_capacity.magnitude
+        self.capacity_factors_source = capacity_factors_source
 
         # Medium-term storage parameters (magnitudes)
         self.medium_storage_capacity = medium_storage_capacity.magnitude
@@ -177,9 +179,11 @@ class PowerSystemNoH2:
         gas_dac_capture_column = f"gas_dac_capture (MtCO2),RC={int(self.renewable_capacity)}GW"
 
         minimum_medium_storage = sim_df[medium_storage_column].min()
-        annual_dac_energy = sim_df[dac_column].mean() * 365
+        number_of_years = len(sim_df) / 365.25
+        annual_dac_energy = sim_df[dac_column].sum() / number_of_years
         annual_co2_removals = annual_dac_energy / A.DAC.EnergyCost.MediumTWhPerMtCO2
-        dac_capacity_factor = (sim_df[dac_column] > 0).mean()
+        maximum_annual_energy = (self.dac_capacity * U.GW * A.HoursPerYear).to(U.TWh)
+        dac_capacity_factor = (annual_dac_energy / maximum_annual_energy).to_base_units().magnitude
         curtailed_energy = sim_df[curtailed_column].mean() * 365
         annual_gas_ccs_energy = sim_df[gas_ccs_column].mean() * 365
         gas_ccs_capacity_factor = (sim_df[gas_ccs_column] > 0).mean()
@@ -189,7 +193,8 @@ class PowerSystemNoH2:
         gas_emissions_intensity = A.GasTechDACParameters.GasCO2Intensity
         annual_gas_emissions = (annual_gas_ccs_energy.to(U.MWh) * gas_emissions_intensity).to(U.Mt)
         annual_net_capture = annual_co2_removals + annual_gas_dac_capture - annual_gas_emissions
-        annual_edac_cost = annual_dac_energy * A.EDAC.LCOE
+        edac_costs = edac_equipment_costs(self.dac_capacity * U.GW, annual_co2_removals)
+        annual_edac_cost = edac_costs["annual_equipment_cost"]
         annual_ltdac_cost = annual_gas_dac_capture.to(U.t) * A.LTDAC.LCOR
         annual_dac_total_cost = annual_edac_cost + annual_ltdac_cost
         dac_cost_per_mwh = (annual_dac_total_cost / A.EnergyDemand2050).to(U.GBP / U.MWh)
@@ -207,16 +212,42 @@ class PowerSystemNoH2:
             "annual_gas_dac_capture": annual_gas_dac_capture,
             "annual_gas_emissions": annual_gas_emissions,
             "annual_net_capture": annual_net_capture,
+            "edac_nameplate_annual_removals": edac_costs["nameplate_annual_removals"],
+            "edac_total_capex": edac_costs["total_capex"],
+            "edac_annualised_capex": edac_costs["annualised_capex"],
+            "edac_fixed_opex": edac_costs["fixed_opex"],
+            "edac_lcor": edac_costs["lcor"],
             "annual_dac_total_cost": annual_dac_total_cost,
             "dac_cost_per_mwh": dac_cost_per_mwh,
         }
 
     def calculate_power_system_cost(self, sim_df: pd.DataFrame | None = None) -> Quantity:
+        """Calculate the total cost of the power system.
+
+        When simulation results are provided, the uncurtailed renewable capacity
+        factor/LCOE are replaced with the curtailment-adjusted values (Newbery
+        2025's LACoE, see src.curtailment_lcoe) implied by this scenario's
+        simulated curtailment.
+        """
+        renewable_capacity_factor = A.Renewables.AverageCapacityFactor
+        renewable_lcoe = A.Renewables.AverageLCOE
+
+        if sim_df is not None:
+            curtailed_column = f"curtailed_energy (TWh),RC={int(self.renewable_capacity)}GW"
+            annual_curtailed_energy = (sim_df[curtailed_column].mean() * 365).to(U.TWh)
+            curtailment_adjusted = average_curtailment_adjusted_lcoe(
+                self.renewable_capacity * U.GW,
+                annual_curtailed_energy,
+                capacity_factors_source=self.capacity_factors_source,
+            )
+            renewable_capacity_factor = curtailment_adjusted["portfolio_average_capacity_factor"]
+            renewable_lcoe = curtailment_adjusted["portfolio_lacoe"]
+
         base_cost = total_system_cost(
             energy_demand=A.EnergyDemand2050,
             renewable_capacity=self.renewable_capacity * U.GW,
-            renewable_capacity_factor=A.Renewables.AverageCapacityFactor,
-            renewable_lcoe=A.Renewables.AverageLCOE,
+            renewable_capacity_factor=renewable_capacity_factor,
+            renewable_lcoe=renewable_lcoe,
             nuclear_capacity=A.Nuclear.Capacity,
             nuclear_capacity_factor=A.Nuclear.CapacityFactor,
             nuclear_lcoe=A.Nuclear.AverageLCOE,

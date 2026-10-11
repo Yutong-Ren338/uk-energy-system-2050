@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 490" font-family="Helvetica, Arial, sans-serif" role="img" aria-label="Schematic of electrochemical DAC (E-DAC) via bipolar-membrane electrodialysis. Air is absorbed into an alkaline solution in a contactor. The loaded solution is regenerated in a BPMED stack, where electricity splits water into H+ and OH- across a bipolar membrane. The acid stream reacts with the loaded solution to release CO2 gas, while the base stream regenerates the alkaline solution and is recycled back to the contactor. Energy is used by fans in the air contactor, electrolysis in the BPMED stack, and drying and compression after CO2 release.">
+<title>Electrochemical DAC (E-DAC) via BPMED</title>
+<defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1A1A1A"/>
+    </marker>
+    <marker id="arrowAcid" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8B2E22"/>
+    </marker>
+    <marker id="arrowBase" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2C4B7C"/>
+    </marker>
+  </defs>
+<rect x="0" y="0" width="380" height="490" fill="#FFFFFF"/>
+<rect x="60" y="60" width="260" height="85" rx="3" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="1.3"/>
+<text x="190.0" y="82" font-size="12.5" font-weight="700" fill="#1A1A1A" text-anchor="middle">Air contactor</text>
+<text x="190.0" y="106" font-size="10.6" fill="#4D4D4D" text-anchor="middle">CO&#8322; + 2OH&#8315; &#8594; CO&#8323;&#178;&#8315; + H&#8322;O</text>
+<text x="170.0" y="126" font-size="9.3" fill="#4D4D4D" text-anchor="middle" font-style="italic">aqueous KOH, packed bed</text>
+<path d="M228,145 L320,93 L320,145 Z" fill="#E79087" fill-opacity="0.55" stroke="#9B2D22" stroke-width="1.2"/>
+<text x="312" y="135" font-size="8.8" font-weight="600" fill="#111111" text-anchor="end">Fans</text>
+<path d="M10,102.5 L55,102.5" fill="none" stroke="#1A1A1A" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="10" y="94.5" font-size="10.3" fill="#1A1A1A">air</text>
+<path d="M190.0,145 L190.0,180" fill="none" stroke="#1A1A1A" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="200.0" y="167" font-size="9.3" fill="#4D4D4D">loaded solution</text>
+<text x="200.0" y="179" font-size="9.3" fill="#4D4D4D">(CO&#8323;&#178;&#8315;/HCO&#8323;&#8315;)</text>
+<rect x="60" y="185" width="260" height="85" rx="3" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="1.3"/>
+<text x="190.0" y="207" font-size="12.5" font-weight="700" fill="#1A1A1A" text-anchor="middle">BPMED stack</text>
+<text x="190.0" y="231" font-size="10.6" fill="#4D4D4D" text-anchor="middle">H&#8322;O &#8594; H&#8314; + OH&#8315; (electricity)</text>
+<text x="170.0" y="251" font-size="9.3" fill="#4D4D4D" text-anchor="middle" font-style="italic">bipolar membrane</text>
+<path d="M228,270 L320,218 L320,270 Z" fill="#E79087" fill-opacity="0.55" stroke="#9B2D22" stroke-width="1.2"/>
+<text x="312" y="260" font-size="8.8" font-weight="600" fill="#111111" text-anchor="end">Electrolysis</text>
+<path d="M100,185 L100,32 L190.0,32 L190.0,55" fill="none" stroke="#2C4B7C" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#arrowBase)"/>
+<rect x="92" y="23" width="170" height="13" fill="#FFFFFF"/>
+<text x="105" y="34" font-size="8.8" fill="#2C4B7C">base stream (OH&#8315;) recycled</text>
+<path d="M190.0,270 L190.0,305" fill="none" stroke="#8B2E22" stroke-width="1.3" marker-end="url(#arrowAcid)"/>
+<text x="200.0" y="292" font-size="9.3" fill="#8B2E22">acid stream (H&#8314;),</text>
+<text x="200.0" y="304" font-size="9.3" fill="#8B2E22">lowers pH</text>
+<rect x="60" y="310" width="260" height="85" rx="3" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="1.3"/>
+<text x="190.0" y="332" font-size="12.5" font-weight="700" fill="#1A1A1A" text-anchor="middle">CO&#8322; release</text>
+<text x="190.0" y="356" font-size="10.6" fill="#4D4D4D" text-anchor="middle">CO&#8323;&#178;&#8315; + 2H&#8314; &#8594; CO&#8322;(g) + H&#8322;O</text>
+<text x="170.0" y="376" font-size="9.3" fill="#4D4D4D" text-anchor="middle" font-style="italic">strips CO&#8322; out of solution</text>
+<path d="M228,395 L320,343 L320,395 Z" fill="#E79087" fill-opacity="0.55" stroke="#9B2D22" stroke-width="1.2"/>
+<text x="312" y="374" font-size="8.6" font-weight="600" fill="#111111" text-anchor="end">Drying &amp;</text>
+<text x="312" y="388" font-size="8.6" font-weight="600" fill="#111111" text-anchor="end">compression</text>
+<path d="M190.0,395 L190.0,430" fill="none" stroke="#1A1A1A" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="190.0" y="450" font-size="12" font-weight="700" fill="#1A1A1A" text-anchor="middle">CO&#8322;(g)</text>
+<text x="190.0" y="465" font-size="9.3" fill="#4D4D4D" text-anchor="middle" font-style="italic">to storage / utilisation</text>
+</svg>

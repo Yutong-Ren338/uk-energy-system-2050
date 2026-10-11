@@ -1,7 +1,7 @@
 from config import check
 
 from src import assumptions as A
-from src.costs import energy_cost, total_storage_cost, total_system_cost, yearly_cost
+from src.costs import edac_equipment_costs, energy_cost, total_storage_cost, total_system_cost, yearly_cost
 from src.units import Units as U
 
 
@@ -52,3 +52,31 @@ def test_recover_old_costs() -> None:
 
     storage_cost_fraction = storage_cost / total_cost
     check(storage_cost_fraction.magnitude, 0.238)
+
+
+def test_edac_equipment_lcor_uses_installed_capacity_and_actual_removals() -> None:
+    installed_power = 1 * U.GW
+    nameplate_energy = (installed_power * A.HoursPerYear).to(U.TWh)
+    nameplate_removals = nameplate_energy / A.DAC.EnergyCost.MediumTWhPerMtCO2
+
+    full_load = edac_equipment_costs(installed_power, nameplate_removals)
+    half_load = edac_equipment_costs(installed_power, nameplate_removals / 2)
+
+    # CAPEX and OPEX learn at different rates, so fixed_opex is no longer a
+    # fixed fraction of total_capex once the learning multipliers diverge.
+    check(full_load["fixed_opex"], full_load["nameplate_annual_removals"] * A.EDAC.LearnedFixedOpexPerAnnualCaptureCapacity)
+    check(half_load["annual_equipment_cost"], full_load["annual_equipment_cost"])
+    check(half_load["lcor"], 2 * full_load["lcor"])
+
+
+def test_edac_discount_rate_sensitivity_only_changes_annualised_capex() -> None:
+    installed_power = 1 * U.GW
+    nameplate_removals = (installed_power * A.HoursPerYear).to(U.TWh) / A.DAC.EnergyCost.MediumTWhPerMtCO2
+
+    central = edac_equipment_costs(installed_power, nameplate_removals)
+    sensitivity = edac_equipment_costs(installed_power, nameplate_removals, A.EDAC.SensitivityDiscountRate)
+
+    check(central["total_capex"], sensitivity["total_capex"])
+    check(central["fixed_opex"], sensitivity["fixed_opex"])
+    assert sensitivity["annualised_capex"] > central["annualised_capex"]
+    assert sensitivity["lcor"] > central["lcor"]
