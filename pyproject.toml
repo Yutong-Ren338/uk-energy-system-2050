@@ -44,6 +44,16 @@ lint.ignore = ["S", "D100", "D101", "D102", "D103",  "D104", "D105", "D106", "D1
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["INP001"]
 "*.ipynb" = ["ERA001"]
+"src/assumptions.py" = ["E501"]
+"src/curtailment_lcoe.py" = ["DOC201"]
+"src/data/ninja_2025_capacity_factors.py" = ["DOC201", "DOC501", "DOC502", "SIM118", "TC003"]
+"src/data/renewable_capacity_factors.py" = ["D301", "DOC201"]
+"src/ninja_2025_wind_plots.py" = ["ARG001", "DOC201", "PLR0911", "PLR0913", "RET504", "UP040"]
+"src/power_system_core_no_h2.py" = ["ARG001", "DOC201"]
+"src/power_system_no_h2.py" = ["DOC201"]
+"src/scenarios.py" = ["D415", "DOC201", "DOC501", "PLR0913", "SIM108", "TC002"]
+"tests/test_curtailment_lcoe.py" = ["PLC2701"]
+"tests/test_supply_model.py" = ["ICN001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

@@ -29,14 +29,19 @@ uv run src/data/scrape_gas_demand.py
 
 ### How to obtain the datasets
 
-Most of the actual data files are not bundled in the GitHub repo. They are ignored by git because they are large, derived from third-party sources, or downloaded separately for local analysis.
+The following full source datasets are versioned with Git LFS: `espeni.csv`, `ERA5_weather_dependent_demand_UK_1979_2019_hourly.csv`, `The-Seventh-Carbon-Budget-full-dataset.xlsx`, and the legacy Renewables.ninja solar and wind CSVs. After cloning or forking the repository, install Git LFS and download them with:
+
+```shell
+git lfs install
+git lfs pull
+```
+
+Git LFS replaces only Git's stored representation with small pointer files; the working-tree files keep their original names and full contents. The remaining optional or externally maintained datasets below still need to be downloaded separately when the corresponding analysis requires them. Automated tests use compact, ordinary-Git fixtures from `tests/fixtures/`.
 
 Use the table above as the source-of-truth for what the code expects locally under `data/`.
 
-- `espeni.csv`: download the ESPENI dataset from the University of Birmingham Zenodo page, then place the CSV in `data/`.
-- `ERA5_full_demand_UK_1979_2019_hourly.csv`, `ERA5_weather_dependent_demand_UK_1979_2019_hourly.csv`, and `ERA5_HDD_all_countries_1979_2019_inclusive.csv`: obtain these from the University of Reading ERA5-derived demand dataset and place them in `data/`.
-- `ccc_daily_demand_2050.csv`, `The-Seventh-Carbon-Budget-full-dataset.xlsx`, and the CB7 methodology workbook: extract or export these from the CCC Seventh Carbon Budget material, then place them in `data/`.
-- Legacy Renewables.ninja files: download the GB solar and wind exports and save them as `data/ninja_pv_country_GB_merra-2_corrected.csv` and `data/ninja_wind_country_GB_current-merra-2_corrected.csv`.
+- `ERA5_full_demand_UK_1979_2019_hourly.csv` and `ERA5_HDD_all_countries_1979_2019_inclusive.csv`: obtain these from the University of Reading ERA5-derived demand dataset and place them in `data/` if they are not already present.
+- `ccc_daily_demand_2050.csv` and the CB7 methodology workbook: extract or export these from the CCC Seventh Carbon Budget material if they are not already present.
 - `data/ninja_2025/`: create this directory locally and place the newer Renewables.ninja files in it:
   `ninja-pv-country-GB-national-merra2.csv`, `ninja-wind-country-GB-future_onshore-merra2.csv`, and `ninja-wind-country-GB-future_offshore-merra2.csv`.
 - `data/ERA5_2021/` and `data/ERA5_2024/`: download and unpack the cited ERA5 archives so the folder structure matches what the loaders expect.

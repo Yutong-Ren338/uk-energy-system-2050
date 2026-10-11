@@ -46,7 +46,7 @@ class LTDACResult:
     annual_electricity: Quantity
 
 
-def run_power_system_scenario(  # noqa: PLR0913
+def run_power_system_scenario(
     *,
     renewable_capacity: Quantity,
     demand_mode: DemandMode = DemandMode.SEASONAL,

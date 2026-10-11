@@ -32,6 +32,13 @@ source .venv/bin/activate
 
 ## Getting Started
 
+Install Git LFS once, then download the full source datasets tracked by LFS:
+
+```bash
+git lfs install
+git lfs pull
+```
+
 Sync dependencies using `uv`:
 
 ```bash
@@ -79,6 +86,8 @@ See `todo.md` for detailed development roadmap.
 ## Data Sources
 
 Historical weather data from ERA5, renewable capacity factors from Renewables.ninja, and demand projections from the CCC Seventh Carbon Budget. See [src/data/README.md](src/data/README.md) for complete data source documentation.
+
+The full legacy source datasets used by the default loaders are stored with Git LFS. A normal clone or fork with Git LFS installed downloads them into `data/` under their original filenames. The test suite uses compact fixtures under `tests/fixtures/`, so CI and contributors can run the tests without loading the full datasets.
 
 ## Related Work
 

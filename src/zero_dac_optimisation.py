@@ -1048,7 +1048,7 @@ def plot_hydrogen_storage(result: OptimisationResult) -> Figure:
         Matplotlib figure containing the daily storage trajectory.
     """
     daily = result.optimal_daily_storage.copy()
-    dates = pd.to_datetime(daily["date"])
+    dates = pd.DatetimeIndex(pd.to_datetime(daily["date"]))
     storage = daily["hydrogen_storage_twh"].to_numpy(dtype=float)
     minimum_index = int(np.argmin(storage))
     optimal = result.summary["optimal_system"]
@@ -1063,7 +1063,7 @@ def plot_hydrogen_storage(result: OptimisationResult) -> Figure:
         label=f"Reserve ({result.config.reserve_twh:g} TWh)",
     )
     axis.scatter(
-        dates.iloc[minimum_index],
+        dates[minimum_index],
         storage[minimum_index],
         color="black",
         s=30,

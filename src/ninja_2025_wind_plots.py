@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TypeAlias
+from typing import TypeAlias, cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -111,7 +111,7 @@ def plot_ninja_2025_wind_power(
     dataset_path: str | Path | None = None,
     dataset_year: int | None = None,
     include_all_regions: bool = False,
-) -> tuple[plt.Figure, plt.Axes, pd.Series]:
+) -> tuple[plt.Figure, plt.Axes, pd.Series | pd.DataFrame]:
     """Plot wind power or capacity factors for a selected NUTS2 region.
 
     Args:
@@ -146,7 +146,11 @@ def plot_ninja_2025_wind_power(
         include_all_regions=include_all_regions,
     )
 
-    fig, plot_ax = (ax.figure, ax) if ax is not None else plt.subplots(figsize=figsize)
+    if ax is None:
+        fig, plot_ax = plt.subplots(figsize=figsize)
+    else:
+        fig = cast("plt.Figure", ax.figure)
+        plot_ax = ax
     ylabel = "Wind power"
 
     series_to_plot = series if isinstance(series, pd.DataFrame) else series.to_frame()
@@ -235,7 +239,10 @@ def _read_capacity_from_dataset(
         return None
 
     try:
-        df = pd.read_stata(path, columns=["NUTS_ID", "year", "wind"])
+        df = cast(
+            "pd.DataFrame",
+            pd.read_stata(path, columns=["NUTS_ID", "year", "wind"]),
+        )
     except (OSError, ValueError, FileNotFoundError):
         return None
 

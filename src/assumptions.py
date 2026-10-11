@@ -1,5 +1,7 @@
 import math
-from typing import ClassVar
+from typing import ClassVar, NamedTuple
+
+from pint import Quantity
 
 from src.lcoe import renewables_2050_lcoe
 from src.units import Units as U
@@ -117,6 +119,14 @@ class Interconnectors:
 # ============================================================================
 
 
+class _RenewableLCOEValues(NamedTuple):
+    """LCOE values for the renewable generation technologies."""
+
+    Solar: Quantity
+    OffshoreWind: Quantity
+    OnshoreWind: Quantity
+
+
 class Renewables:
     """Parameters for renewable energy technologies including solar, offshore wind, and onshore wind."""
 
@@ -159,17 +169,11 @@ class Renewables:
     # (see tests/test_lcoe.py); ModelImpliedLCOE.* shows what the £/MWh cost
     # looks like if the plant instead achieves this model's simulated average
     # utilisation, which differs from the Annex A assumption (e.g. offshore
-    # wind: 0.5 in Annex A vs CapacityFactors.OffshoreWind here). Built via
-    # type() rather than a nested `class` statement because a nested class
-    # body can't see names (like CapacityFactors) from its enclosing class body.
-    ModelImpliedLCOE = type(
-        "ModelImpliedLCOE",
-        (),
-        {
-            "Solar": renewables_2050_lcoe("Large Scale Solar PV", load_factor=CapacityFactors.Solar)["total"],
-            "OffshoreWind": renewables_2050_lcoe("Fixed Offshore Wind", load_factor=CapacityFactors.OffshoreWind)["total"],
-            "OnshoreWind": renewables_2050_lcoe("Onshore Wind", load_factor=CapacityFactors.OnshoreWind)["total"],
-        },
+    # wind: 0.5 in Annex A vs CapacityFactors.OffshoreWind here).
+    ModelImpliedLCOE = _RenewableLCOEValues(
+        Solar=renewables_2050_lcoe("Large Scale Solar PV", load_factor=CapacityFactors.Solar)["total"],
+        OffshoreWind=renewables_2050_lcoe("Fixed Offshore Wind", load_factor=CapacityFactors.OffshoreWind)["total"],
+        OnshoreWind=renewables_2050_lcoe("Onshore Wind", load_factor=CapacityFactors.OnshoreWind)["total"],
     )
 
     # Calculated weighted average capacity factor across all renewable technologies

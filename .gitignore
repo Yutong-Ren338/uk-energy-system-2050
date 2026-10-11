@@ -29,6 +29,17 @@ output/
 nbs/output/
 *.pdf
 
+# Reproducible test fixtures are intentionally versioned.
+!tests/fixtures/
+!tests/fixtures/**
+
+# Full source datasets distributed through Git LFS.
+!data/The-Seventh-Carbon-Budget-full-dataset.xlsx
+!data/espeni.csv
+!data/ERA5_weather_dependent_demand_UK_1979_2019_hourly.csv
+!data/ninja_pv_country_GB_merra-2_corrected.csv
+!data/ninja_wind_country_GB_current-merra-2_corrected.csv
+
 # Teaching site (Streamlit) deployment data allow-list
 !requirements.txt
 !runtime.txt

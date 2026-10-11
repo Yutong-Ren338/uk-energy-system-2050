@@ -35,7 +35,7 @@ SIMULATION_KWARGS = {
 
 @pytest.fixture
 def sample_data_rei() -> pd.DataFrame:
-    test_data_path = Path(__file__).parent / "rei_net_supply_df_12gw_nuclear.csv"
+    test_data_path = Path(__file__).parent / "fixtures" / "rei_net_supply_df_12gw_nuclear.csv"
     return pd.read_csv(test_data_path)
 
 

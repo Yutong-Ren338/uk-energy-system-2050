@@ -1,0 +1,5 @@
+data/The-Seventh-Carbon-Budget-full-dataset.xlsx filter=lfs diff=lfs merge=lfs -text
+data/espeni.csv filter=lfs diff=lfs merge=lfs -text
+data/ERA5_weather_dependent_demand_UK_1979_2019_hourly.csv filter=lfs diff=lfs merge=lfs -text
+data/ninja_pv_country_GB_merra-2_corrected.csv filter=lfs diff=lfs merge=lfs -text
+data/ninja_wind_country_GB_current-merra-2_corrected.csv filter=lfs diff=lfs merge=lfs -text
